@@ -4,9 +4,10 @@
 import PackageDescription
 
 let package = Package(
-    name: "project-generator",
+    name: "dependency-injection-performance",
     platforms: [
         .macOS(.v13),
+        .iOS("999")
     ],
     products: [
         .executable(name: "ProjectGeneratorCommands", targets: ["ProjectGeneratorCommands"]),
