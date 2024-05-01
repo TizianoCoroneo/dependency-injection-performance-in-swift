@@ -11,18 +11,10 @@ import SwiftWyhash
 import GraphViz
 import Foundation
 
-func indent(_ level: Int, _ lines: [String], separator: String = "") -> String {
-    if lines.isEmpty {
-        return ""
-    } else {
-        let spacing = String(repeating: "    ", count: level)
-        let previousSpacing = String(repeating: "    ", count: level - 1)
-        return """
-
-        \(spacing + lines.joined(separator: "\(separator)\n\(spacing)"))
-        \(previousSpacing)
-        """
-    }
+func indent(_ level: Int, _ content: String) -> String {
+    content.split(separator: "\n")
+        .map { "\(String(repeating: "    ", count: level))\($0)" }
+        .joined(separator: "\n")
 }
 
 extension GraphViz.Graph {
@@ -47,6 +39,7 @@ public struct GraphSpec: Codable {
     public enum ProjectType: String, Codable {
         case simple
         case swinject
+        case factory
     }
 }
 

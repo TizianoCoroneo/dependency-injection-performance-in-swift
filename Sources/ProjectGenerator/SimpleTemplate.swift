@@ -17,34 +17,51 @@ struct ClassTemplate {
     let name: Int
     let properties: [PropertyTemplate]
 
+    var propertyName: String {
+        "mock_\(name)"
+    }
+
+    var typeName: String {
+        "Mock_\(name)"
+    }
+
+    var typeObject: String {
+        "\(typeName).self"
+    }
+
     func constantInstanceDeclaration(level: Int) -> String {
         """
-        let mock_\(name) = \(instance(level: level + 1))
+        let \(propertyName) = \(instance(level: level + 1))
         """
     }
 
     func instance(level: Int) -> String {
         """
-        Mock_\(name)(\(indent(level, properties.map(\.passedParameter), separator: ",")))
+        \(typeName)(\(indent(level, properties.map(\.passedParameter).joined(separator: ",\n"))))
         """
     }
 
     var containerPair: String {
         """
-        ObjectIdentifier(Mock_\(name).self): mock_\(name) as Any
+        ObjectIdentifier(\(typeObject)): \(propertyName) as Any
         """
     }
 
     var simpleAccess: String {
         """
-        blackHole(container[ObjectIdentifier(Mock_\(name).self)]! as! Mock_\(name))
+        blackHole(container[ObjectIdentifier(\(typeObject))]! as! \(typeName))
         """
     }
 
     var definition: String {
         """
-        public class Mock_\(name) { \(indent(1, properties.map(\.declaration)))
-            public init(\(indent(2, properties.map(\.parameter), separator: ","))) {\(indent(2, properties.map(\.assignment)))}
+        public class \(typeName) { 
+        \(indent(1, properties.map(\.declaration).joined(separator: "\n")))
+            public init(
+        \(indent(2, properties.map(\.parameter).joined(separator: ",\n")))
+            ) {
+        \(indent(2, properties.map(\.assignment).joined(separator: "\n")))
+            }
         }
 
         """
@@ -86,17 +103,18 @@ public struct SimpleTemplate: ProjectTemplate {
 
     public func contents(using rng: inout RandomNumberGenerator) -> String {
         """
+
+        \(boilerplate)
+
         \(definitions)
 
         public typealias Container = [ObjectIdentifier: Any]
 
-        public func makeContainer() -> Container { \(indent(1, classes.reversed().map { $0.constantInstanceDeclaration(level: 1) }))
-            return [\(indent(2, classes.map(\.containerPair), separator: ","))]
+        public func makeContainer() -> Container { \(indent(1, classes.reversed().map { $0.constantInstanceDeclaration(level: 1) }.joined(separator: "\n")))
+            return [\(indent(2, classes.map(\.containerPair).joined(separator: ",\n")))]
         }
 
-        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.shuffled(using: &rng).map(\.simpleAccess))) }
-
-        @_optimize(none) private func blackHole(_: some Any) {}
+        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.shuffled(using: &rng).map(\.simpleAccess).joined(separator: "\n"))) }
 
         """
     }

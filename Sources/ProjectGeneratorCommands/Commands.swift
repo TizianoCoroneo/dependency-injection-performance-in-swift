@@ -27,6 +27,7 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
         let template: any ProjectTemplate = switch spec.projectType {
         case .simple: SimpleTemplate(graph: graph)
         case .swinject: SwinjectTemplate(graph: graph)
+        case .factory: FactoryTemplate(graph: graph)
         }
 
         try template.contents(using: &rng).data(using: .utf8)?.write(to: sourceOut)

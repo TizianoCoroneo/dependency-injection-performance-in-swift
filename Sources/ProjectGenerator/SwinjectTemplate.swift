@@ -28,19 +28,19 @@ public struct SwinjectTemplate: ProjectTemplate {
         """
         import Swinject
 
+        \(boilerplate)
+
         \(definitions)
 
         public func makeContainer() -> Container {
             let container = Container()
 
-            \(indent(1, classes.reversed().map(\.swinjectRegistration)))
-            
+            \(indent(1, classes.reversed().map(\.swinjectRegistration).joined(separator: "\n")))
+
             return container
         }
 
-        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.reversed().map(\.swinjectAccess))) }
-
-        @_optimize(none) private func blackHole(_: some Any) {}
+        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.reversed().map(\.swinjectAccess).joined(separator: "\n"))) }
 
         """
     }
@@ -57,7 +57,7 @@ fileprivate extension PropertyTemplate {
 fileprivate extension ClassTemplate {
     var swinjectRegistration: String {
         """
-        container.register(Mock_\(name).self) { r in Mock_\(name).init(\(indent(2, properties.map(\.swinjectDependency), separator: ","))) }
+        container.register(Mock_\(name).self) { r in Mock_\(name).init(\(indent(2, properties.map(\.swinjectDependency).joined(separator: ",\n")))) }
         """
     }
 

@@ -20,6 +20,7 @@ let package = Package(
         .package(url: "https://github.com/SwiftDocOrg/GraphViz", from: "0.4.1"),
         .package(url: "https://github.com/ordo-one/package-benchmark", .upToNextMajor(from: "1.23.1")),
         .package(url: "https://github.com/Swinject/Swinject.git", from: "2.8.0"),
+        .package(url: "https://github.com/hmlongco/Factory.git", from: "2.3.2"),
     ],
     targets: [
         .executableTarget(
@@ -34,6 +35,7 @@ let package = Package(
                 "SwiftWyhash",
                 "GraphViz",
                 "Swinject",
+                "Factory",
             ]),
         
         .testTarget(
@@ -52,6 +54,7 @@ let package = Package(
 package.targets += [
     benchmark("SimpleProject"),
     benchmark("SwinjectProject", dependencies: ["Swinject"]),
+    benchmark("FactoryProject", dependencies: ["Factory"]),
 ]
 
 func benchmark(_ name: String, dependencies: [Target.Dependency] = []) -> Target {
