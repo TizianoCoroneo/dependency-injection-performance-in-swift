@@ -21,6 +21,7 @@ let package = Package(
         .package(url: "https://github.com/ordo-one/package-benchmark", .upToNextMajor(from: "1.23.1")),
         .package(url: "https://github.com/Swinject/Swinject.git", from: "2.8.0"),
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.3.2"),
+        .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -31,6 +32,7 @@ let package = Package(
             name: "ProjectGenerator",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
                 "SwiftGraph",
                 "SwiftWyhash",
                 "GraphViz",
@@ -54,9 +56,17 @@ let package = Package(
 package.targets += [
     benchmark("CreateContainer"),
     benchmark("AccessAll"),
+    benchmark("Complete"),
 ]
 
-func benchmark(_ name: String, dependencies: [Target.Dependency] = ["Swinject", "Factory"]) -> Target {
+func benchmark(
+    _ name: String,
+    dependencies: [Target.Dependency] = [
+        "Swinject",
+        "Factory",
+        .product(name: "Dependencies", package: "swift-dependencies"),
+    ]
+) -> Target {
     .executableTarget(
         name: name,
         dependencies: [ .product(name: "Benchmark", package: "package-benchmark") ] + dependencies,

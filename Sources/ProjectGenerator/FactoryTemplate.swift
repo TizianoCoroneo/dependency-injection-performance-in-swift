@@ -31,7 +31,7 @@ public struct FactoryTemplate: ProjectTemplate {
         \(indent(1, classes.reversed().map(\.factoryRegistration).joined(separator: "\n")))
         }
 
-        public struct FactoryTemplate {
+        public struct FactoryTemplate: GeneratedProject {
         public init() {}
 
         public func makeContainer() -> FactoryContainer {

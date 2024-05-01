@@ -6,30 +6,22 @@ private func commandClickToAccessBuiltCode() { print(SeeTheActualCode.self) }
 #endif
 
 let benchmarks = {
-    Benchmark(
-        "Simple",
-        configuration: .init(maxDuration: .seconds(10))
-    ) { benchmark in
-        for _ in benchmark.scaledIterations {
-            blackHole(SimpleTemplate().makeContainer())
-        }
-    }
+    benchmark(name: "Simple", template: SimpleTemplate())
+    benchmark(name: "Swinject", template: SwinjectTemplate())
+    benchmark(name: "Factory", template: FactoryTemplate())
+    benchmark(name: "swift-dependencies", template: SwiftDependenciesTemplate())
+}
 
+func benchmark<P: GeneratedProject>(
+    name: String,
+    template: P
+) {
     Benchmark(
-        "Swinject",
+        name,
         configuration: .init(maxDuration: .seconds(10))
     ) { benchmark in
         for _ in benchmark.scaledIterations {
-            blackHole(SwinjectTemplate().makeContainer())
-        }
-    }
-
-    Benchmark(
-        "Factory",
-        configuration: .init(maxDuration: .seconds(10))
-    ) { benchmark in
-        for _ in benchmark.scaledIterations {
-            blackHole(FactoryTemplate().makeContainer())
+            blackHole(template.makeContainer())
         }
     }
 }

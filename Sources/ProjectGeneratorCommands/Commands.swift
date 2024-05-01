@@ -20,6 +20,8 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
     var swinjectOut: URL
     @Option(completion: .file(extensions: ["swift"]), transform: URL.init(fileURLWithPath:))
     var factoryOut: URL
+    @Option(completion: .file(extensions: ["swift"]), transform: URL.init(fileURLWithPath:))
+    var swiftDependenciesOut: URL
 
     @Option(completion: .file(extensions: ["jpg"]), transform: URL.init(fileURLWithPath:))
     var imageOut: URL
@@ -33,6 +35,8 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
         try SwinjectTemplate(graph: graph).contents(using: &rng).data(using: .utf8)?.write(to: swinjectOut)
 
         try FactoryTemplate(graph: graph).contents(using: &rng).data(using: .utf8)?.write(to: factoryOut)
+
+        try SwiftDependenciesTemplate(graph: graph).contents(using: &rng).data(using: .utf8)?.write(to: swiftDependenciesOut)
 
         try await graph.renderToJPG().write(to: imageOut)
     }

@@ -19,6 +19,12 @@ public extension ProjectTemplate {
         import func Benchmark.blackHole
 
         public enum SeeTheActualCode {}
+        
+        protocol GeneratedProject {
+            associatedtype Container
+            func makeContainer() -> Container
+            func accessAllInContainer(_ container: Container)
+        }
         """
     }
 }
