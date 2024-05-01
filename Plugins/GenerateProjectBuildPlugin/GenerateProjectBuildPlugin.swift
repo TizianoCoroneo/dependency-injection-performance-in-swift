@@ -36,7 +36,7 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
 
         return [
             .buildCommand(
-                displayName: "Generating mocks and image from \(inputPath.lastComponent)",
+                displayName: "Generating mocks project from \(inputPath.lastComponent)",
                 executable: try context.tool(named: "ProjectGeneratorCommands").path,
                 arguments: [
                     "--spec", "\(inputPath)",

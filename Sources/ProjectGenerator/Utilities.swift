@@ -41,7 +41,7 @@ public struct GraphSpec: Codable {
     let width: ClosedRange<Int>
     let height: ClosedRange<Int>
     let density: Double
-    let seed: UInt64
+    public let seed: UInt64
     public let projectType: ProjectType
 
     public enum ProjectType: String, Codable {
@@ -52,27 +52,14 @@ public struct GraphSpec: Codable {
 
 extension UnweightedGraph<Int> {
     public static func randomDAG(
-        spec: GraphSpec
+        spec: GraphSpec,
+        using rng: inout RandomNumberGenerator
     ) -> UnweightedGraph<Int> {
         randomDAG(
             widthRange: spec.width,
             heightRange: spec.height,
             density: spec.density,
-            using: spec.seed)
-    }
-
-    static func randomDAG(
-        widthRange: ClosedRange<Int> = 1...10, // Nodes/Rank: How 'fat' the DAG should be
-        heightRange: ClosedRange<Int> = 15...20, // Ranks: How 'tall' the DAG should be
-        density: Double = 0.8,
-        using seed: UInt64 = UInt64.random(in: .min...(.max))
-    ) -> UnweightedGraph<Int> {
-        var randomGenerator: any RandomNumberGenerator = WyRand(seed: seed)
-        return UnweightedGraph.randomDAG(
-            widthRange: widthRange,
-            heightRange: heightRange,
-            density: density,
-            using: &randomGenerator)
+            using: &rng)
     }
 
     internal static func randomDAG(

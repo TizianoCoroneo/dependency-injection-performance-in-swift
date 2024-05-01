@@ -10,5 +10,5 @@ import SwiftGraph
 public protocol ProjectTemplate {
     init(graph: UnweightedGraph<Int>)
 
-    var contents: String { get }
+    func contents(using rng: inout RandomNumberGenerator) -> String
 }

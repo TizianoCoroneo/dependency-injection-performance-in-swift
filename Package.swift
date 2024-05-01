@@ -51,13 +51,13 @@ let package = Package(
 
 package.targets += [
     benchmark("SimpleProject"),
-    benchmark("SwinjectProject"),
+    benchmark("SwinjectProject", dependencies: ["Swinject"]),
 ]
 
-func benchmark(_ name: String) -> Target {
+func benchmark(_ name: String, dependencies: [Target.Dependency] = []) -> Target {
     .executableTarget(
         name: name,
-        dependencies: [ .product(name: "Benchmark", package: "package-benchmark"), ],
+        dependencies: [ .product(name: "Benchmark", package: "package-benchmark") ] + dependencies,
         path: "Benchmarks/\(name)",
         resources: [ .process("project.spec") ],
         plugins: [

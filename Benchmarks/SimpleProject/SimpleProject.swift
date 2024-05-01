@@ -4,9 +4,21 @@ import Benchmark
 import Foundation
 
 let benchmarks = {
-    Benchmark("Simple") { benchmark in
+    Benchmark("Simple - Create container") { benchmark in
         for _ in benchmark.scaledIterations {
             blackHole(makeContainer())
+        }
+    }
+
+    Benchmark(
+        "Simple - Read all from container",
+        configuration: .init(maxDuration: .seconds(10))
+    ) { benchmark in
+        let c = makeContainer()
+
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            accessAllInContainer(c)
         }
     }
 }

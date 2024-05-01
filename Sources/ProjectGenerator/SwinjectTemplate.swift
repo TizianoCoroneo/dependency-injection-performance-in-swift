@@ -24,7 +24,7 @@ public struct SwinjectTemplate: ProjectTemplate {
         """
     }
 
-    public var contents: String {
+    public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Swinject
 
@@ -37,6 +37,10 @@ public struct SwinjectTemplate: ProjectTemplate {
             
             return container
         }
+
+        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.reversed().map(\.swinjectAccess))) }
+
+        @_optimize(none) private func blackHole(_: some Any) {}
 
         """
     }
@@ -54,6 +58,12 @@ fileprivate extension ClassTemplate {
     var swinjectRegistration: String {
         """
         container.register(Mock_\(name).self) { r in Mock_\(name).init(\(indent(2, properties.map(\.swinjectDependency), separator: ","))) }
+        """
+    }
+
+    var swinjectAccess: String {
+        """
+        blackHole(container.resolve(Mock_\(name).self)!)
         """
     }
 }

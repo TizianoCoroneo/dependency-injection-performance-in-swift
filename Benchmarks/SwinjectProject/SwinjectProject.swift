@@ -4,9 +4,21 @@ import Benchmark
 import Foundation
 
 let benchmarks = {
-    Benchmark("Swinject") { benchmark in
+    Benchmark("Swinject - Create container") { benchmark in
         for _ in benchmark.scaledIterations {
             blackHole(makeContainer())
+        }
+    }
+
+    Benchmark(
+        "Swinject - Read all from container",
+        configuration: .init(maxDuration: .seconds(10))
+    ) { benchmark in
+        let c = makeContainer()
+
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            accessAllInContainer(c)
         }
     }
 }

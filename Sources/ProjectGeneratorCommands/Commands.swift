@@ -1,6 +1,7 @@
 
 import ArgumentParser
 import SwiftGraph
+import SwiftWyhash
 import Foundation
 import ProjectGenerator
 
@@ -20,14 +21,15 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
     var imageOut: URL
 
     func run() async throws {
-        let graph = UnweightedGraph.randomDAG(spec: spec)
+        var rng: any RandomNumberGenerator = WyRand(seed: spec.seed)
+        let graph = UnweightedGraph.randomDAG(spec: spec, using: &rng)
 
         let template: any ProjectTemplate = switch spec.projectType {
         case .simple: SimpleTemplate(graph: graph)
         case .swinject: SwinjectTemplate(graph: graph)
         }
 
-        try template.contents.data(using: .utf8)?.write(to: sourceOut)
+        try template.contents(using: &rng).data(using: .utf8)?.write(to: sourceOut)
         try await graph.renderToJPG().write(to: imageOut)
     }
 }

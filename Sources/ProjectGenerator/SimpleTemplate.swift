@@ -17,22 +17,27 @@ struct ClassTemplate {
     let name: Int
     let properties: [PropertyTemplate]
 
-    var constantInstanceDeclaration: String {
+    func constantInstanceDeclaration(level: Int) -> String {
         """
-        let mock_\(name) = \(instance)
-
+        let mock_\(name) = \(instance(level: level + 1))
         """
     }
 
-    var instance: String {
+    func instance(level: Int) -> String {
         """
-        Mock_\(name)(\(indent(1, properties.map(\.passedParameter), separator: ",")))
+        Mock_\(name)(\(indent(level, properties.map(\.passedParameter), separator: ",")))
         """
     }
 
     var containerPair: String {
         """
         ObjectIdentifier(Mock_\(name).self): mock_\(name) as Any
+        """
+    }
+
+    var simpleAccess: String {
+        """
+        blackHole(container[ObjectIdentifier(Mock_\(name).self)]! as! Mock_\(name))
         """
     }
 
@@ -79,13 +84,19 @@ public struct SimpleTemplate: ProjectTemplate {
         """
     }
 
-    public var contents: String {
+    public func contents(using rng: inout RandomNumberGenerator) -> String {
         """
         \(definitions)
 
-        public func makeContainer() -> [ObjectIdentifier: Any] { \(indent(1, classes.reversed().map(\.constantInstanceDeclaration)))
+        public typealias Container = [ObjectIdentifier: Any]
+
+        public func makeContainer() -> Container { \(indent(1, classes.reversed().map { $0.constantInstanceDeclaration(level: 1) }))
             return [\(indent(2, classes.map(\.containerPair), separator: ","))]
         }
+
+        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.shuffled(using: &rng).map(\.simpleAccess))) }
+
+        @_optimize(none) private func blackHole(_: some Any) {}
 
         """
     }
