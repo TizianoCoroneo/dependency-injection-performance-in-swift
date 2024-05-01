@@ -17,20 +17,13 @@ public struct SwinjectTemplate: ProjectTemplate {
         self.init(classes: ClassTemplate.from(graph: graph))
     }
 
-    var definitions: String {
-        """
-        \(classes.map(\.definition).joined())
-
-        """
-    }
-
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Swinject
+        import func Benchmark.blackHole
 
-        \(boilerplate)
-
-        \(definitions)
+        public struct SwinjectTemplate {
+        public init() {}
 
         public func makeContainer() -> Container {
             let container = Container()
@@ -41,6 +34,8 @@ public struct SwinjectTemplate: ProjectTemplate {
         }
 
         public func accessAllInContainer(_ container: Container) { \(indent(1, classes.reversed().map(\.swinjectAccess).joined(separator: "\n"))) }
+
+        }
 
         """
     }
@@ -58,6 +53,7 @@ fileprivate extension ClassTemplate {
     var swinjectRegistration: String {
         """
         container.register(Mock_\(name).self) { r in Mock_\(name).init(\(indent(2, properties.map(\.swinjectDependency).joined(separator: ",\n")))) }
+            .inObjectScope(.container)
         """
     }
 

@@ -17,32 +17,31 @@ public struct FactoryTemplate: ProjectTemplate {
         self.init(classes: ClassTemplate.from(graph: graph))
     }
 
-    var definitions: String {
-        """
-        \(classes.map(\.definition).joined())
-
-        """
-    }
-
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Factory
+        import func Benchmark.blackHole
 
-        \(boilerplate)
+        public final class FactoryContainer: SharedContainer {
+            public static var shared: FactoryContainer = .init()
+            public var manager: ContainerManager = .init()
+        }
 
-        \(definitions)
-
-        public extension Container {
+        public extension FactoryContainer {
         \(indent(1, classes.reversed().map(\.factoryRegistration).joined(separator: "\n")))
         }
 
-        public func makeContainer() -> Container {
-        \(indent(1, classes.map { "blackHole(Container.shared.\($0.propertyName)())" }.joined(separator: "\n")))
+        public struct FactoryTemplate {
+        public init() {}
+
+        public func makeContainer() -> FactoryContainer {
+        \(indent(1, classes.map { "blackHole(FactoryContainer.shared.\($0.propertyName)())" }.joined(separator: "\n")))
             return .shared
         }
 
-        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.reversed().map(\.factoryAccess).joined(separator: "\n"))) }
-
+        public func accessAllInContainer(_ container: FactoryContainer) { \(indent(1, classes.reversed().map(\.factoryAccess).joined(separator: "\n"))) }
+        
+        }
         """
     }
 }
@@ -76,7 +75,7 @@ fileprivate extension ClassTemplate {
 
     var factoryAccess: String {
         """
-        blackHole(Injected(\\.\(propertyName)).wrappedValue)
+        blackHole(Injected(\\FactoryContainer.\(propertyName)).wrappedValue)
         """
     }
 }

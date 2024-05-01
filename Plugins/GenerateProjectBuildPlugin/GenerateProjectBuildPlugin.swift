@@ -27,12 +27,10 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
             return []
         }
 
-        let sourcePath = context.pluginWorkDirectory.appending(inputPath.stem + ".swift")
+        let simplePath = context.pluginWorkDirectory.appending(inputPath.stem + "-simple.swift")
+        let swinjectPath = context.pluginWorkDirectory.appending(inputPath.stem + "-swinject.swift")
+        let factoryPath = context.pluginWorkDirectory.appending(inputPath.stem + "-factory.swift")
         let imagePath = context.pluginWorkDirectory.appending(inputPath.stem + ".jpg")
-
-        Diagnostics.emit(.remark, "Input spec path: \(inputPath)")
-        Diagnostics.emit(.remark, "Source output path: \(sourcePath)")
-        Diagnostics.emit(.remark, "Image output path: \(imagePath)")
 
         return [
             .buildCommand(
@@ -40,11 +38,13 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
                 executable: try context.tool(named: "ProjectGeneratorCommands").path,
                 arguments: [
                     "--spec", "\(inputPath)",
-                    "--source-out", "\(sourcePath)",
+                    "--simple-out", "\(simplePath)",
+                    "--swinject-out", "\(swinjectPath)",
+                    "--factory-out", "\(factoryPath)",
                     "--image-out", "\(imagePath)"
                 ],
                 inputFiles: [ inputPath ],
-                outputFiles: [ sourcePath, imagePath ]
+                outputFiles: [ simplePath, swinjectPath, factoryPath, imagePath ]
             )
         ]
     }

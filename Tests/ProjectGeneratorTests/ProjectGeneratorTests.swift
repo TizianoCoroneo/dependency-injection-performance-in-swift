@@ -17,17 +17,25 @@ import UniformTypeIdentifiers
 final class ProjectGeneratorTests: XCTestCase {
 
     func testGenerateImage_Random() async throws {
-        let seed = UInt64.random(in: .min...(.max))
-        print("seed: \(seed)")
-        try await saveGraphImage(seed: seed)
+        var rng: any RandomNumberGenerator = SystemRandomNumberGenerator()
+        try await saveGraphImage(rng: &rng)
     }
     
     func testGenerateImage_OpenSourceModel() async throws {
-        try await saveGraphImage(seed: 8022432027272689264)
+        var rng: any RandomNumberGenerator = SystemRandomNumberGenerator()
+        for _ in 0..<100 { try await saveGraphImage(rng: &rng) }
     }
 
-    private func saveGraphImage(seed: UInt64) async throws {
-        let graph = UnweightedGraph.randomDAG(using: seed)
+    private func saveGraphImage(
+        rng: inout RandomNumberGenerator
+    ) async throws {
+        let graph = UnweightedGraph.randomDAG(
+            spec: GraphSpec(
+                width: 1...10,
+                height: 5...15,
+                density: 0.8),
+            using: &rng)
+
         let data = try await graph.renderToJPG()
         let attachment = XCTAttachment(data: data, uniformTypeIdentifier: UTType.jpeg.identifier)
         attachment.lifetime = .keepAlways

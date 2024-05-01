@@ -16,32 +16,40 @@ public protocol ProjectTemplate {
 public extension ProjectTemplate {
     var boilerplate: String {
         """
-        import Benchmark
+        import func Benchmark.blackHole
 
         public enum SeeTheActualCode {}
+        """
+    }
+}
 
-        let benchmarks = {
-            Benchmark(
-                "\(Self.self) - Create container",
-                configuration: .init(maxDuration: .seconds(10))
-            ) { benchmark in
-                for _ in benchmark.scaledIterations {
-                    blackHole(makeContainer())
-                }
-            }
+public struct BasicTemplate: ProjectTemplate {
+    let classes: [ClassTemplate]
+    let graph: UnweightedGraph<Int>
 
-            Benchmark(
-                "\(Self.self) - Read all from container",
-                configuration: .init(maxDuration: .seconds(10))
-            ) { benchmark in
-                let c = makeContainer()
+    init(classes: [ClassTemplate], graph: UnweightedGraph<Int>) {
+        self.classes = classes
+        self.graph = graph
+    }
 
-                benchmark.startMeasurement()
-                for _ in benchmark.scaledIterations {
-                    accessAllInContainer(c)
-                }
-            }
-        }
+    public init(graph: UnweightedGraph<Int>) {
+        self.init(classes: ClassTemplate.from(graph: graph), graph: graph)
+    }
+
+    var definitions: String {
+        """
+        \(classes.map(\.definition).joined())
+
+        """
+    }
+
+    public func contents(using rng: inout any RandomNumberGenerator) -> String {
+        """
+        \(boilerplate)
+
+        \(definitions)
+
+        \(SimpleTemplate(graph: graph).contents(using: &rng))
 
         """
     }

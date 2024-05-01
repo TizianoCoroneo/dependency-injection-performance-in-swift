@@ -94,19 +94,13 @@ public struct SimpleTemplate: ProjectTemplate {
         self.init(classes: ClassTemplate.from(graph: graph))
     }
 
-    var definitions: String {
-        """
-        \(classes.map(\.definition).joined())
-
-        """
-    }
-
     public func contents(using rng: inout RandomNumberGenerator) -> String {
         """
 
-        \(boilerplate)
+        import func Benchmark.blackHole
 
-        \(definitions)
+        public struct SimpleTemplate {
+        public init() {}
 
         public typealias Container = [ObjectIdentifier: Any]
 
@@ -115,6 +109,8 @@ public struct SimpleTemplate: ProjectTemplate {
         }
 
         public func accessAllInContainer(_ container: Container) { \(indent(1, classes.shuffled(using: &rng).map(\.simpleAccess).joined(separator: "\n"))) }
+
+        }
 
         """
     }

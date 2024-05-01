@@ -34,12 +34,12 @@ public struct GraphSpec: Codable {
     let height: ClosedRange<Int>
     let density: Double
     public let seed: UInt64
-    public let projectType: ProjectType
 
-    public enum ProjectType: String, Codable {
-        case simple
-        case swinject
-        case factory
+    public init(width: ClosedRange<Int>, height: ClosedRange<Int>, density: Double, seed: UInt64 = 0) {
+        self.width = width
+        self.height = height
+        self.density = density
+        self.seed = seed
     }
 }
 

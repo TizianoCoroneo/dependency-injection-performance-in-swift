@@ -52,12 +52,11 @@ let package = Package(
 // MARK: - Benchmarks
 
 package.targets += [
-    benchmark("SimpleProject"),
-    benchmark("SwinjectProject", dependencies: ["Swinject"]),
-    benchmark("FactoryProject", dependencies: ["Factory"]),
+    benchmark("CreateContainer"),
+    benchmark("AccessAll"),
 ]
 
-func benchmark(_ name: String, dependencies: [Target.Dependency] = []) -> Target {
+func benchmark(_ name: String, dependencies: [Target.Dependency] = ["Swinject", "Factory"]) -> Target {
     .executableTarget(
         name: name,
         dependencies: [ .product(name: "Benchmark", package: "package-benchmark") ] + dependencies,

@@ -15,7 +15,11 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
     var spec: GraphSpec
 
     @Option(completion: .file(extensions: ["swift"]), transform: URL.init(fileURLWithPath:))
-    var sourceOut: URL
+    var simpleOut: URL
+    @Option(completion: .file(extensions: ["swift"]), transform: URL.init(fileURLWithPath:))
+    var swinjectOut: URL
+    @Option(completion: .file(extensions: ["swift"]), transform: URL.init(fileURLWithPath:))
+    var factoryOut: URL
 
     @Option(completion: .file(extensions: ["jpg"]), transform: URL.init(fileURLWithPath:))
     var imageOut: URL
@@ -24,13 +28,12 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
         var rng: any RandomNumberGenerator = WyRand(seed: spec.seed)
         let graph = UnweightedGraph.randomDAG(spec: spec, using: &rng)
 
-        let template: any ProjectTemplate = switch spec.projectType {
-        case .simple: SimpleTemplate(graph: graph)
-        case .swinject: SwinjectTemplate(graph: graph)
-        case .factory: FactoryTemplate(graph: graph)
-        }
+        try BasicTemplate(graph: graph).contents(using: &rng).data(using: .utf8)?.write(to: simpleOut)
 
-        try template.contents(using: &rng).data(using: .utf8)?.write(to: sourceOut)
+        try SwinjectTemplate(graph: graph).contents(using: &rng).data(using: .utf8)?.write(to: swinjectOut)
+
+        try FactoryTemplate(graph: graph).contents(using: &rng).data(using: .utf8)?.write(to: factoryOut)
+
         try await graph.renderToJPG().write(to: imageOut)
     }
 }
