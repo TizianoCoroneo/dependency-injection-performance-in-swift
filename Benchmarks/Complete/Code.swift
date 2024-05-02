@@ -6,10 +6,10 @@ private func commandClickToAccessBuiltCode() { print(SeeTheActualCode.self) }
 #endif
 
 let benchmarks = {
-    benchmark(name: "Simple", template: SimpleTemplate())
-    benchmark(name: "Swinject", template: SwinjectTemplate())
-    benchmark(name: "Factory", template: FactoryTemplate())
-    benchmark(name: "swift-dependencies", template: SwiftDependenciesTemplate())
+    benchmark(name: "Simple", template: GeneratedBySimple())
+    benchmark(name: "Swinject", template: GeneratedBySwinject())
+    benchmark(name: "Factory", template: GeneratedByFactory())
+    benchmark(name: "swift-dependencies", template: GeneratedBySwiftDependencies())
 }
 
 func benchmark<P: GeneratedProject>(

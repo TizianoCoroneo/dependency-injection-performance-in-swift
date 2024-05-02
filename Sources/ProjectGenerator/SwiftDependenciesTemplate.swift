@@ -24,7 +24,7 @@ public struct SwiftDependenciesTemplate: ProjectTemplate {
 
         \(classes.reversed().map(\.swiftDependenciesRegistration).joined(separator: "\n"))
 
-        public struct SwiftDependenciesTemplate: GeneratedProject {
+        public struct GeneratedBySwiftDependencies: GeneratedProject {
         public typealias Container = [Any]
         public init() {}
 

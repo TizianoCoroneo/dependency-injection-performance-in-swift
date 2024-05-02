@@ -99,7 +99,7 @@ public struct SimpleTemplate: ProjectTemplate {
 
         import func Benchmark.blackHole
 
-        public struct SimpleTemplate: GeneratedProject {
+        public struct GeneratedBySimple: GeneratedProject {
         public init() {}
 
         public typealias Container = [ObjectIdentifier: Any]

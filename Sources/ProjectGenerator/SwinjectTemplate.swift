@@ -22,7 +22,7 @@ public struct SwinjectTemplate: ProjectTemplate {
         import Swinject
         import func Benchmark.blackHole
 
-        public struct SwinjectTemplate: GeneratedProject {
+        public struct GeneratedBySwinject: GeneratedProject {
         public init() {}
 
         public func makeContainer() -> Container {
