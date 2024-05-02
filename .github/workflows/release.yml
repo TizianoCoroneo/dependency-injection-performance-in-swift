@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags:
+    - '*'
+
+# Make sure that we only benchmark the last version per branch, max one at the time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: brew install jemalloc graphviz
+    - name: Run benchmark
+      run: swift package --allow-writing-to-package-directory benchmark --format jmh --path ./benchmark_result.json
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ./benchmark_result.json
