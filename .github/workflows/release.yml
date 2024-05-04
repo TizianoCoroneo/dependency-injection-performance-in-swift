@@ -25,9 +25,9 @@ jobs:
     - name: Install dependencies
       run: brew install jemalloc graphviz
     - name: Run benchmark
-      run: swift package --allow-writing-to-package-directory benchmark --format jmh --path ./benchmark_result.json
+      run: swift package --allow-writing-to-package-directory benchmark --format jmh --path .
     - name: Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: ./benchmark_result.json
+        files: ./Current_run.jmh.json
