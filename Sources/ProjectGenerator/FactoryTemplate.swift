@@ -4,7 +4,6 @@ import SwiftGraph
 import SwiftWyhash
 import GraphViz
 import Foundation
-import Factory
 
 public struct FactoryTemplate: ProjectTemplate {
     let classes: [ClassTemplate]
@@ -46,15 +45,13 @@ public struct FactoryTemplate: ProjectTemplate {
     }
 }
 
-fileprivate extension PropertyTemplate {
+fileprivate extension ClassTemplate {
     var factoryDependency: String {
         """
         mock_\(name): self.mock_\(name)()
         """
     }
-}
 
-fileprivate extension ClassTemplate {
     func factoryInstance(level: Int) -> String {
         """
         \(typeName)(

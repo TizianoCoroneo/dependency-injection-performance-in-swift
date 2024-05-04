@@ -4,7 +4,6 @@ import SwiftGraph
 import SwiftWyhash
 import GraphViz
 import Foundation
-import Swinject
 
 public struct SwinjectTemplate: ProjectTemplate {
     let classes: [ClassTemplate]
@@ -41,15 +40,13 @@ public struct SwinjectTemplate: ProjectTemplate {
     }
 }
 
-fileprivate extension PropertyTemplate {
+fileprivate extension ClassTemplate {
     var swinjectDependency: String {
         """
         mock_\(name): r.resolve(Mock_\(name).self)!
         """
     }
-}
 
-fileprivate extension ClassTemplate {
     var swinjectRegistration: String {
         """
         container.register(Mock_\(name).self) { r in Mock_\(name).init(\(indent(2, properties.map(\.swinjectDependency).joined(separator: ",\n")))) }

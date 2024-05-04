@@ -4,7 +4,6 @@ import SwiftGraph
 import SwiftWyhash
 import GraphViz
 import Foundation
-import Dependencies
 
 public struct SwiftDependenciesTemplate: ProjectTemplate {
     let classes: [ClassTemplate]
@@ -38,15 +37,13 @@ public struct SwiftDependenciesTemplate: ProjectTemplate {
     }
 }
 
-fileprivate extension PropertyTemplate {
+fileprivate extension ClassTemplate {
     var swiftDependenciesDependency: String {
         """
         mock_\(name): Mock_\(name)_Key.liveValue
         """
     }
-}
 
-fileprivate extension ClassTemplate {
     func swiftDependenciesInstance(level: Int) -> String {
         """
         \(typeName)(\(indent(level, properties.map(\.swiftDependenciesDependency).joined(separator: ",\n"))))

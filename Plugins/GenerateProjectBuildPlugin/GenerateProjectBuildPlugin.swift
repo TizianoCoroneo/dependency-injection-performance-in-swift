@@ -31,6 +31,7 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
         let swinjectPath = context.pluginWorkDirectory.appending(inputPath.stem + "-swinject.swift")
         let factoryPath = context.pluginWorkDirectory.appending(inputPath.stem + "-factory.swift")
         let swiftDependenciesPath = context.pluginWorkDirectory.appending(inputPath.stem + "-swift-dependencies.swift")
+        let cleansePath = context.pluginWorkDirectory.appending(inputPath.stem + "-cleanse.swift")
         let imagePath = context.pluginWorkDirectory.appending(inputPath.stem + ".jpg")
 
         return [
@@ -43,10 +44,11 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
                     "--swinject-out", "\(swinjectPath)",
                     "--factory-out", "\(factoryPath)",
                     "--swift-dependencies-out", "\(swiftDependenciesPath)",
+                    "--cleanse-out", "\(cleansePath)",
                     "--image-out", "\(imagePath)"
                 ],
                 inputFiles: [ inputPath ],
-                outputFiles: [ simplePath, swinjectPath, factoryPath, swiftDependenciesPath, imagePath ]
+                outputFiles: [ simplePath, swinjectPath, factoryPath, swiftDependenciesPath, cleansePath, imagePath ]
             )
         ]
     }

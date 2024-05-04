@@ -15,13 +15,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
-        .package(url: "https://github.com/davecom/SwiftGraph", from: "3.1.0"),
+        .package(url: "https://github.com/TizianoCoroneo/SwiftGraph-Mirror", branch: "tiziano/indegree-outdegree"),
         .package(url: "https://github.com/lemire/SwiftWyhash", from: "0.1.1"),
         .package(url: "https://github.com/SwiftDocOrg/GraphViz", from: "0.4.1"),
         .package(url: "https://github.com/ordo-one/package-benchmark", .upToNextMajor(from: "1.23.1")),
         .package(url: "https://github.com/Swinject/Swinject.git", from: "2.8.0"),
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.3.2"),
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
+        .package(url: "https://github.com/square/Cleanse", from: "4.2.6"),
     ],
     targets: [
         .executableTarget(
@@ -33,11 +34,12 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
-                "SwiftGraph",
+                .product(name: "SwiftGraph", package: "SwiftGraph-Mirror"),
                 "SwiftWyhash",
                 "GraphViz",
                 "Swinject",
                 "Factory",
+                "Cleanse",
             ]),
         
         .testTarget(
@@ -64,6 +66,7 @@ func benchmark(
     dependencies: [Target.Dependency] = [
         "Swinject",
         "Factory",
+        "Cleanse",
         .product(name: "Dependencies", package: "swift-dependencies"),
     ]
 ) -> Target {

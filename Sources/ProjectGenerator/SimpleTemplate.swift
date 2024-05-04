@@ -5,28 +5,33 @@ import SwiftWyhash
 import GraphViz
 import Foundation
 
-struct PropertyTemplate {
-    let name: Int
-    var assignment: String { "self.mock_\(name) = mock_\(name)" }
-    var parameter: String { "mock_\(name): Mock_\(name)" }
-    var passedParameter: String { "mock_\(name): mock_\(name)" }
-    var declaration: String { "let mock_\(name): Mock_\(name)" }
-}
-
 struct ClassTemplate {
     let name: Int
-    let properties: [PropertyTemplate]
+    let properties: [ClassTemplate]
 
-    var propertyName: String {
-        "mock_\(name)"
+    init(name: Int, properties: [ClassTemplate] = []) {
+        self.name = name
+        self.properties = properties
     }
 
-    var typeName: String {
-        "Mock_\(name)"
-    }
+    var assignment: String { "self.\(propertyName) = \(propertyName)" }
+    var parameter: String { "\(propertyName): \(typeName)" }
+    var passedParameter: String { "\(propertyName): \(propertyName)" }
+    var declaration: String { "let \(propertyName): \(typeName)" }
+    var propertyName: String { "mock_\(name)" }
+    var typeName: String { "Mock_\(name)" }
+    var typeObject: String { "\(typeName).self" }
 
-    var typeObject: String {
-        "\(typeName).self"
+    func initializer(level: Int) -> String {
+        indent(
+            level,
+            """
+            public init(
+                \(properties.map(\.parameter).joined(separator: ",\n"))
+            ) {
+                \(properties.map(\.assignment).joined(separator: "\n"))
+            }
+            """)
     }
 
     func constantInstanceDeclaration(level: Int) -> String {
@@ -73,7 +78,7 @@ struct ClassTemplate {
 
         for vertex in sortedVertices {
             let properties = (graph.neighborsForVertex(vertex) ?? [])
-                .map { PropertyTemplate(name: $0) }
+                .map { ClassTemplate(name: $0) }
 
             let classTemplate = ClassTemplate(name: vertex, properties: properties)
             classes.append(classTemplate)
