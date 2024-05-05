@@ -21,18 +21,19 @@ public struct SwinjectTemplate: ProjectTemplate {
         import func Benchmark.blackHole
 
         public struct GeneratedBySwinject: GeneratedProject {
-        public init() {}
+            public init() {}
 
-        public func makeContainer() -> Container {
-            let container = Container()
+            public func makeContainer() -> Container {
+                let container = Container()
 
-            \(indent(1, classes.reversed().map(\.swinjectRegistration).joined(separator: "\n")))
+        \(indent(2, classes.reversed().map(\.swinjectRegistration).joined(separator: "\n")))
 
-            return container
-        }
+                return container
+            }
 
-        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.reversed().map(\.swinjectAccess).joined(separator: "\n"))) }
-
+            public func accessAllInContainer(_ container: Container) {
+        \(indent(2, classes.reversed().map(\.swinjectAccess).joined(separator: "\n")))
+            }
         }
 
         """

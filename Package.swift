@@ -14,7 +14,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
-        .package(url: "https://github.com/TizianoCoroneo/SwiftGraph-Mirror", branch: "tiziano/indegree-outdegree"),
+        .package(url: "https://github.com/davecom/SwiftGraph", from: "3.1.0"),
         .package(url: "https://github.com/lemire/SwiftWyhash", from: "0.1.1"),
         .package(url: "https://github.com/SwiftDocOrg/GraphViz", from: "0.4.1"),
         .package(url: "https://github.com/ordo-one/package-benchmark", .upToNextMajor(from: "1.23.1")),
@@ -23,6 +23,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(url: "https://github.com/square/Cleanse", from: "4.2.6"),
         .package(url: "https://github.com/uber/needle", from: "0.24.0"),
+        .package(url: "https://github.com/TizianoCoroneo/Carpenter", from: "0.2.0"),
         .package(name: "NeedleGenerator", path: "Generator"),
     ],
     targets: [
@@ -35,12 +36,13 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Dependencies", package: "swift-dependencies"),
-                .product(name: "SwiftGraph", package: "SwiftGraph-Mirror"),
+                "SwiftGraph",
                 "SwiftWyhash",
                 "GraphViz",
                 "Swinject",
                 "Factory",
                 "Cleanse",
+                .product(name: "Carpenter", package: "Carpenter"),
                 .product(name: "NeedleFoundation", package: "needle"),
             ]),
 
@@ -72,6 +74,7 @@ func benchmark(
         "Swinject",
         "Factory",
         "Cleanse",
+        "Carpenter",
         .product(name: "NeedleFoundation", package: "needle"),
         .product(name: "Dependencies", package: "swift-dependencies"),
     ]

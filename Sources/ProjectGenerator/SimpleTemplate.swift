@@ -143,16 +143,20 @@ public struct SimpleTemplate: ProjectTemplate {
         import func Benchmark.blackHole
 
         public struct GeneratedBySimple: GeneratedProject {
-        public init() {}
+            public init() {}
 
-        public typealias Container = [ObjectIdentifier: Any]
+            public typealias Container = [ObjectIdentifier: Any]
 
-        public func makeContainer() -> Container { \(indent(1, classes.reversed().map { $0.constantInstanceDeclaration(level: 1) }.joined(separator: "\n")))
-            return [\(indent(2, classes.map(\.containerPair).joined(separator: ",\n")))]
-        }
+            public func makeContainer() -> Container { 
+        \(indent(1, classes.reversed().map { $0.constantInstanceDeclaration(level: 1) }.joined(separator: "\n")))
+                return [
+        \(indent(2, classes.map(\.containerPair).joined(separator: ",\n")))
+                ]
+            }
 
-        public func accessAllInContainer(_ container: Container) { \(indent(1, classes.shuffled(using: &rng).map(\.simpleAccess).joined(separator: "\n"))) }
-
+            public func accessAllInContainer(_ container: Container) { 
+        \(indent(1, classes.shuffled(using: &rng).map(\.simpleAccess).joined(separator: "\n")))
+            }
         }
 
         """

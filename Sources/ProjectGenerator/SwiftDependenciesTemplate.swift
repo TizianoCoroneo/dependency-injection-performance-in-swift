@@ -23,14 +23,17 @@ public struct SwiftDependenciesTemplate: ProjectTemplate {
         \(classes.reversed().map(\.swiftDependenciesRegistration).joined(separator: "\n"))
 
         public struct GeneratedBySwiftDependencies: GeneratedProject {
-        public typealias Container = [Any]
-        public init() {}
+            public typealias Container = [Any]
+            public init() {}
 
-        public func makeContainer() -> Container { [\(indent(1, classes.reversed().map(\.swiftDependenciesBuild).joined(separator: ",\n")))] }
+            public func makeContainer() -> Container { [
+        \(indent(1, classes.reversed().map(\.swiftDependenciesBuild).joined(separator: ",\n")))
+            ] }
 
-        public func accessAllInContainer(_ container: Container) {
-            blackHole(container)
-            \(indent(1, classes.reversed().map(\.swiftDependenciesAccess).joined(separator: "\n"))) }
+            public func accessAllInContainer(_ container: Container) {
+                blackHole(container)
+        \(indent(1, classes.reversed().map(\.swiftDependenciesAccess).joined(separator: "\n")))
+            }
         }
         """
     }

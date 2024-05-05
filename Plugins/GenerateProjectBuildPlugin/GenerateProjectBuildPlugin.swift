@@ -33,7 +33,8 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
             "factory",
             "swift-dependencies",
             "cleanse",
-            "needle"
+            "needle",
+            "carpenter",
         ]
         
         let paths = libraries.map { context.pluginWorkDirectory.appending(inputPath.stem + "-\($0).swift") }

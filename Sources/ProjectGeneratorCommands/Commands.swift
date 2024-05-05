@@ -26,6 +26,8 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
     var cleanseOut: URL
     @Option(completion: .file(extensions: ["swift"]), transform: URL.init(fileURLWithPath:))
     var needleOut: URL
+    @Option(completion: .file(extensions: ["swift"]), transform: URL.init(fileURLWithPath:))
+    var carpenterOut: URL
 
     @Option(completion: .file(extensions: ["jpg"]), transform: URL.init(fileURLWithPath:))
     var imageOut: URL
@@ -41,6 +43,7 @@ struct GenerateSimpleProjectCommand: AsyncParsableCommand {
             (SwiftDependenciesTemplate.init(graph:), swiftDependenciesOut),
             (CleanseTemplate.init(graph:), cleanseOut),
             (NeedleTemplate.init(graph:), needleOut),
+            (CarpenterTemplate.init(graph:), carpenterOut),
         ]
 
         for (makeTemplate, outputURL) in templates {

@@ -28,21 +28,20 @@ public struct NeedleTemplate: ProjectTemplate {
         import func Benchmark.blackHole
 
         public struct GeneratedByNeedle: GeneratedProject {
-        public init() {}
+            public init() {}
 
-        public class ContainerComponent: NeedleFoundation.BootstrapComponent {
+            public class ContainerComponent: NeedleFoundation.BootstrapComponent {
         \(indent(1, classes.reversed().map(\.needleRegistration).joined(separator: "\n")))
-        }
+            }
 
-        public func makeContainer() -> ContainerComponent {
-            registerProviderFactories()
-            return ContainerComponent()
-        }
+            public func makeContainer() -> ContainerComponent {
+                registerProviderFactories()
+                return ContainerComponent()
+            }
 
-        public func accessAllInContainer(_ container: ContainerComponent) {
+            public func accessAllInContainer(_ container: ContainerComponent) {
         \(indent(1, classes.reversed().map(\.needleAccess).joined(separator: "\n")))
-        }
-
+            }
         }
 
         """

@@ -30,15 +30,16 @@ public struct FactoryTemplate: ProjectTemplate {
         }
 
         public struct GeneratedByFactory: GeneratedProject {
-        public init() {}
+            public init() {}
 
-        public func makeContainer() -> FactoryContainer {
+            public func makeContainer() -> FactoryContainer {
         \(indent(1, classes.map { "blackHole(FactoryContainer.shared.\($0.propertyName)())" }.joined(separator: "\n")))
-            return .shared
-        }
+                return .shared
+            }
 
-        public func accessAllInContainer(_ container: FactoryContainer) { \(indent(1, classes.reversed().map(\.factoryAccess).joined(separator: "\n"))) }
-        
+            public func accessAllInContainer(_ container: FactoryContainer) {
+        \(indent(1, classes.reversed().map(\.factoryAccess).joined(separator: "\n")))
+            }
         }
         """
     }

@@ -36,28 +36,27 @@ public struct CleanseTemplate: ProjectTemplate {
         import func Benchmark.blackHole
 
         public struct GeneratedByCleanse: GeneratedProject {
-        public init() {}
+            public init() {}
 
-        public struct BenchmarkComponent : Cleanse.RootComponent {
-            public typealias Root = BuiltProductsContainer
+            public struct BenchmarkComponent : Cleanse.RootComponent {
+                public typealias Root = BuiltProductsContainer
 
-            public static func configureRoot(binder: ReceiptBinder<BuiltProductsContainer>) -> BindingReceipt<BuiltProductsContainer> {
-                binder.to(factory: BuiltProductsContainer.init)
-            }
+                public static func configureRoot(binder: ReceiptBinder<BuiltProductsContainer>) -> BindingReceipt<BuiltProductsContainer> {
+                    binder.to(factory: BuiltProductsContainer.init)
+                }
 
-            public static func configure(binder: Binder<Singleton>) {
+                public static func configure(binder: Binder<Singleton>) {
         \(indent(3, classes.map(\.cleanseRegistration).joined(separator: "\n")))
+                }
             }
-        }
 
-        public func makeContainer() -> ComponentFactory<ComponentFactory<BenchmarkComponent>.ComponentElement> {
-            try! ComponentFactory.of(BenchmarkComponent.self)
-        }
+            public func makeContainer() -> ComponentFactory<ComponentFactory<BenchmarkComponent>.ComponentElement> {
+                try! ComponentFactory.of(BenchmarkComponent.self)
+            }
 
-        public func accessAllInContainer(_ container: ComponentFactory<ComponentFactory<BenchmarkComponent>.ComponentElement>) {
-            blackHole(container.build(()))
-        }
-        
+            public func accessAllInContainer(_ container: ComponentFactory<ComponentFactory<BenchmarkComponent>.ComponentElement>) {
+                blackHole(container.build(()))
+            }
         }
 
         """

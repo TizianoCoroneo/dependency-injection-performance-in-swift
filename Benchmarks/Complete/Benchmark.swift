@@ -12,6 +12,7 @@ let benchmarks = {
     benchmark(name: "swift-dependencies", template: GeneratedBySwiftDependencies())
     benchmark(name: "Cleanse", template: GeneratedByCleanse())
     benchmark(name: "Needle", template: GeneratedByNeedle())
+    benchmark(name: "Carpenter", template: GeneratedByCarpenter())
 }
 
 func benchmark<P: GeneratedProject>(

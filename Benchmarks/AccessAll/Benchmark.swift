@@ -12,6 +12,7 @@ let benchmarks = {
     benchmark(name: "swift-dependencies", template: GeneratedBySwiftDependencies())
     benchmark(name: "Cleanse", template: GeneratedByCleanse())
     benchmark(name: "Needle", template: GeneratedByNeedle())
+    benchmark(name: "Carpenter", template: GeneratedByCarpenter())
 }
 
 func benchmark<P: GeneratedProject>(
@@ -23,7 +24,6 @@ func benchmark<P: GeneratedProject>(
         configuration: .init(maxDuration: .seconds(10))
     ) { benchmark in
         let c = template.makeContainer()
-
         benchmark.startMeasurement()
 
         for _ in benchmark.scaledIterations {
