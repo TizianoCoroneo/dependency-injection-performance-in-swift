@@ -31,3 +31,5 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: ./Current_run.jmh.json
+        fail_on_unmatched_files: true
+        generate_release_notes: true
