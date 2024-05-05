@@ -11,6 +11,7 @@ let package = Package(
     ],
     products: [
         .executable(name: "ProjectGeneratorCommands", targets: ["ProjectGeneratorCommands"]),
+        .executable(name: "ProfilerTarget", targets: ["ProfilerTarget"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
@@ -23,10 +24,28 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(url: "https://github.com/square/Cleanse", from: "4.2.6"),
         .package(url: "https://github.com/uber/needle", from: "0.24.0"),
-        .package(url: "https://github.com/TizianoCoroneo/Carpenter", from: "0.2.0"),
+//        .package(url: "https://github.com/TizianoCoroneo/Carpenter", from: "0.2.0"),
+        .package(name: "Carpenter", path: "../Carpenter"),
         .package(name: "NeedleGenerator", path: "Generator"),
     ],
     targets: [
+        .executableTarget(
+            name: "ProfilerTarget",
+            dependencies: [ 
+                "ProjectGenerator",
+                .product(name: "Benchmark", package: "package-benchmark"),
+                "Swinject",
+                "Factory",
+                "Cleanse",
+                "Carpenter",
+                .product(name: "NeedleFoundation", package: "needle"),
+                .product(name: "Dependencies", package: "swift-dependencies"),
+            ],
+            resources: [ .process("project.spec") ],
+            plugins: [
+                .plugin(name: "GenerateProjectBuildPlugin"),
+            ]),
+
         .executableTarget(
             name: "ProjectGeneratorCommands",
             dependencies: ["ProjectGenerator"]),

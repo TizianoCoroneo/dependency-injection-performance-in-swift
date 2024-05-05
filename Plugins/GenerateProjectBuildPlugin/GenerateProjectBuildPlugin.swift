@@ -49,7 +49,7 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
             imagePath
         ] + paths
 
-        print("Path: \(context.pluginWorkDirectory)")
+        Diagnostics.emit(.remark, "Path: \(context.pluginWorkDirectory)")
 
         return [
             .buildCommand(
