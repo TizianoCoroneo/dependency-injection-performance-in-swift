@@ -11,7 +11,6 @@ let package = Package(
     ],
     products: [
         .executable(name: "ProjectGeneratorCommands", targets: ["ProjectGeneratorCommands"]),
-        .plugin(name: "GenerateProjectBuildPlugin", targets: ["GenerateProjectBuildPlugin"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
@@ -23,6 +22,8 @@ let package = Package(
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.3.2"),
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(url: "https://github.com/square/Cleanse", from: "4.2.6"),
+        .package(url: "https://github.com/uber/needle", from: "0.24.0"),
+        .package(name: "NeedleGenerator", path: "Generator"),
     ],
     targets: [
         .executableTarget(
@@ -40,8 +41,9 @@ let package = Package(
                 "Swinject",
                 "Factory",
                 "Cleanse",
+                .product(name: "NeedleFoundation", package: "needle"),
             ]),
-        
+
         .testTarget(
             name: "ProjectGeneratorTests",
             dependencies: ["ProjectGenerator"]),
@@ -49,7 +51,10 @@ let package = Package(
         .plugin(
             name: "GenerateProjectBuildPlugin",
             capability: .buildTool,
-            dependencies: ["ProjectGeneratorCommands"]),
+            dependencies: [
+                "ProjectGeneratorCommands",
+                .product(name: "needle", package: "NeedleGenerator"),
+            ]),
     ]
 )
 
@@ -67,6 +72,7 @@ func benchmark(
         "Swinject",
         "Factory",
         "Cleanse",
+        .product(name: "NeedleFoundation", package: "needle"),
         .product(name: "Dependencies", package: "swift-dependencies"),
     ]
 ) -> Target {

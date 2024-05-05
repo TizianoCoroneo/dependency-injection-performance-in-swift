@@ -11,6 +11,7 @@ let benchmarks = {
     benchmark(name: "Factory", template: GeneratedByFactory())
     benchmark(name: "swift-dependencies", template: GeneratedBySwiftDependencies())
     benchmark(name: "Cleanse", template: GeneratedByCleanse())
+    benchmark(name: "Needle", template: GeneratedByNeedle())
 }
 
 func benchmark<P: GeneratedProject>(
@@ -21,6 +22,7 @@ func benchmark<P: GeneratedProject>(
         name,
         configuration: .init(maxDuration: .seconds(10))
     ) { benchmark in
+        benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             let c = template.makeContainer()
             blackHole(template.accessAllInContainer(c))

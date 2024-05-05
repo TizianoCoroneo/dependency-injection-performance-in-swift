@@ -2,7 +2,6 @@
 import ArgumentParser
 import SwiftGraph
 import SwiftWyhash
-import GraphViz
 import Foundation
 
 public struct SwinjectTemplate: ProjectTemplate {

@@ -27,29 +27,47 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
             return []
         }
 
-        let simplePath = context.pluginWorkDirectory.appending(inputPath.stem + "-simple.swift")
-        let swinjectPath = context.pluginWorkDirectory.appending(inputPath.stem + "-swinject.swift")
-        let factoryPath = context.pluginWorkDirectory.appending(inputPath.stem + "-factory.swift")
-        let swiftDependenciesPath = context.pluginWorkDirectory.appending(inputPath.stem + "-swift-dependencies.swift")
-        let cleansePath = context.pluginWorkDirectory.appending(inputPath.stem + "-cleanse.swift")
+        let libraries = [
+            "simple",
+            "swinject",
+            "factory",
+            "swift-dependencies",
+            "cleanse",
+            "needle"
+        ]
+        
+        let paths = libraries.map { context.pluginWorkDirectory.appending(inputPath.stem + "-\($0).swift") }
         let imagePath = context.pluginWorkDirectory.appending(inputPath.stem + ".jpg")
+
+        let arguments = [
+            "--spec", "\(inputPath)",
+            "--image-out", "\(imagePath)",
+        ] + zip(libraries, paths).flatMap { [ "--\($0)-out", "\($1)" ] }
+
+        let outputFiles = [
+            imagePath
+        ] + paths
+
+        print("Path: \(context.pluginWorkDirectory)")
 
         return [
             .buildCommand(
                 displayName: "Generating mocks project from \(inputPath.lastComponent)",
                 executable: try context.tool(named: "ProjectGeneratorCommands").path,
-                arguments: [
-                    "--spec", "\(inputPath)",
-                    "--simple-out", "\(simplePath)",
-                    "--swinject-out", "\(swinjectPath)",
-                    "--factory-out", "\(factoryPath)",
-                    "--swift-dependencies-out", "\(swiftDependenciesPath)",
-                    "--cleanse-out", "\(cleansePath)",
-                    "--image-out", "\(imagePath)"
-                ],
+                arguments: arguments,
                 inputFiles: [ inputPath ],
-                outputFiles: [ simplePath, swinjectPath, factoryPath, swiftDependenciesPath, cleansePath, imagePath ]
-            )
+                outputFiles: outputFiles),
+            
+            .buildCommand(
+                displayName: "Needle generator",
+                executable: try context.tool(named: "needle").path,
+                arguments: [
+                    "generate",
+                    context.pluginWorkDirectory.appending(subpath: "generated-by-needle.swift"),
+                    context.pluginWorkDirectory,
+                    "--additional-imports", "import NeedleFoundation"
+                ],
+                outputFiles: [ context.pluginWorkDirectory.appending("generated-by-needle.swift") ])
         ]
     }
 }

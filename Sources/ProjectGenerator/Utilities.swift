@@ -12,7 +12,9 @@ import GraphViz
 import Foundation
 
 func indent(_ level: Int, _ content: String) -> String {
-    content.split(separator: "\n")
+    let splits = content.split(separator: "\n")
+    let level = splits.isEmpty ? 0 : level
+    return splits
         .map { "\(String(repeating: "    ", count: level))\($0)" }
         .joined(separator: "\n")
 }

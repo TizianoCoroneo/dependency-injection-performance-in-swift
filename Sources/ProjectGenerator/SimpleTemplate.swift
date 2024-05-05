@@ -2,7 +2,6 @@
 import ArgumentParser
 import SwiftGraph
 import SwiftWyhash
-import GraphViz
 import Foundation
 
 struct ClassTemplate {
@@ -42,7 +41,7 @@ struct ClassTemplate {
 
     func instance(level: Int) -> String {
         """
-        \(typeName)(\(indent(level, properties.map(\.passedParameter).joined(separator: ",\n"))))
+        \(typeName)(\(properties.isEmpty ? "" : "\n")\(indent(level, properties.map(\.passedParameter).joined(separator: ",\n"))))
         """
     }
 
@@ -88,19 +87,58 @@ struct ClassTemplate {
     }
 }
 
+
 public struct SimpleTemplate: ProjectTemplate {
     let classes: [ClassTemplate]
+    let sourceClasses: [ClassTemplate]
+    let graph: UnweightedGraph<Int>
 
-    init(classes: [ClassTemplate]) {
+    init(
+        classes: [ClassTemplate],
+        sourceClasses: [ClassTemplate],
+        graph: UnweightedGraph<Int>
+    ) {
         self.classes = classes
+        self.sourceClasses = sourceClasses
+        self.graph = graph
     }
 
     public init(graph: UnweightedGraph<Int>) {
-        self.init(classes: ClassTemplate.from(graph: graph))
+        let sourceVertices = graph.indices.compactMap { index in
+            if graph.indegreeOfVertex(at: index) == 0 {
+                return graph.vertexAtIndex(index)
+            } else {
+                return nil
+            }
+        }
+
+        self.init(
+            classes: ClassTemplate.from(graph: graph),
+            sourceClasses: sourceVertices.map { ClassTemplate(name: $0) },
+            graph: graph)
     }
 
-    public func contents(using rng: inout RandomNumberGenerator) -> String {
+    var definitions: String {
         """
+        \(classes.map(\.definition).joined())
+
+        public class BuiltProductsContainer {
+        \(indent(1, sourceClasses.map(\.declaration).joined(separator: "\n")))
+            public init(
+        \(indent(2, sourceClasses.map(\.parameter).joined(separator: ",\n")))
+            ) {
+        \(indent(2, sourceClasses.map(\.assignment).joined(separator: "\n")))
+            }
+        }
+
+        """
+    }
+
+    public func contents(using rng: inout any RandomNumberGenerator) -> String {
+        """
+        \(boilerplate)
+
+        \(definitions)
 
         import func Benchmark.blackHole
 
