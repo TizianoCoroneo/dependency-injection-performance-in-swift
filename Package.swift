@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "dependency-injection-performance",
     platforms: [
-        .macOS(.v13),
+        .macOS(.v14),
         .iOS("999")
     ],
     products: [

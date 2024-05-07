@@ -12,7 +12,7 @@ public struct CarpenterTemplate: ProjectTemplate {
         self.classes = classes
     }
 
-    public init(graph: UnweightedGraph<Int>) {
+    public init(graph: SwiftGraph.UnweightedGraph<Int>) {
         self.init(classes: ClassTemplate.from(graph: graph))
     }
 
