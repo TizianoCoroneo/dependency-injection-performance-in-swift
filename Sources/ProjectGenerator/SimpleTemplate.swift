@@ -140,8 +140,6 @@ public struct SimpleTemplate: ProjectTemplate {
 
         \(definitions)
 
-        import func Benchmark.blackHole
-
         public struct GeneratedBySimple: GeneratedProject {
             public init() {}
 

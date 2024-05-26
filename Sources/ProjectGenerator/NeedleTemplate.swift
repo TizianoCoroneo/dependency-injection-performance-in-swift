@@ -18,7 +18,6 @@ public struct NeedleTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import NeedleFoundation
-        import func Benchmark.blackHole
 
         public struct GeneratedByNeedle: GeneratedProject {
             public init() {}

@@ -35,7 +35,6 @@ let package = Package(
             name: "ProfilerTarget",
             dependencies: [ 
                 "ProjectGenerator",
-                .product(name: "Benchmark", package: "package-benchmark"),
                 "Swinject",
                 "Factory",
                 "Cleanse",

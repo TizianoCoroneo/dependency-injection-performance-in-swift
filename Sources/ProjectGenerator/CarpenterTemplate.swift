@@ -18,7 +18,6 @@ public struct CarpenterTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Carpenter
-        import func Benchmark.blackHole
 
         public final class CarpenterContainer: DependencyContainer {
             public static var shared: CarpenterContainer = .init()
@@ -32,7 +31,7 @@ public struct CarpenterTemplate: ProjectTemplate {
 
             public func makeContainer() -> Carpenter {
                 var c = try! Carpenter.init {
-                    CarpenterContainer.allFactories
+        \(indent(3, classes.reversed().map(\.carpenterInsertIntoContainer).joined(separator: "\n")))
                 }
 
                 try! c.build()
@@ -53,6 +52,12 @@ fileprivate extension ClassTemplate {
     var carpenterRegistration: String {
         """
         let \(propertyName) = Factory(\(typeName).init)
+        """
+    }
+
+    var carpenterInsertIntoContainer: String {
+        """
+        CarpenterContainer.shared.\(propertyName)
         """
     }
 

@@ -18,7 +18,6 @@ public struct FactoryTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Factory
-        import func Benchmark.blackHole
 
         public final class FactoryContainer: SharedContainer {
             public static var shared: FactoryContainer = .init()

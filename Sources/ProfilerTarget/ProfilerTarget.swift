@@ -9,14 +9,13 @@ let logger = Logger(subsystem: "com.tiziano.di.profiler", category: "DI profiler
 
 @main
 public struct ProfilerTarget: ParsableCommand {
-    @Option
-    private var projectType: ProjectType = .simple
 
-    public init() {
-        self.init(projectType: .simple)
-    }
+    @Option private var projectType: ProjectType = .simple
+
+    public init() {}
 
     public init(projectType: ProjectType) {
+        self.init()
         self.projectType = projectType
     }
 

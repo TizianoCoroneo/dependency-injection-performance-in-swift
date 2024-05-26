@@ -134,26 +134,26 @@ We conducted a series of benchmarks and analyses to investigate the tradeoffs an
 
 We developed a codegen tool that generates projects using each library under test, creating a large object graph; then we integrated this tool as a build-time plugin inside a benchmark suite that measures three different procedures:
 
-1. How long does it take to create the object graph?
+1. *How long does it take to create the object graph?*
 For the largest object graphs, this is typically done once, at the start of the lifetime of a mobile application. The typical app has to initialize an API client, maybe a local database, deeplink handlers, push notification handlers, some kind of secure storage for passwords and sensitive data, a logging system... and most of these objects are interdependent and never deallocated for the lifetime of the application. Measuring the creation of the dependency injection system's object graph captures how long it takes for each library to create this first network of objects, which, from here on, we will call the "DI container".
   
-2. How long does it take to access all objects in the dependency injection container?
+2. *How long does it take to access all objects in the dependency injection container?*
 This represents a proxy for common usage of the above-mentioned objects. Apps are making API calls, saving things to databases and caches, and accessing all these kinds of dependencies all the time. We approximate the typical usage of the objects in the dependency graph by simulating a high count of sequential accesses to the objects in the DI container.
 
-3. How long does it take to perform both tasks?
+3. *How long does it take to perform both tasks?*
 This value is used as a total score to compare the performance of each library.
 
 == Benchmarking Setup
 
 The hardware used for benchmarking is a MacBook Pro equipped with an Apple M1 chip and 16GB of RAM. Software-wise, we used macOS Sonoma 14.5, Xcode 15.3, and Swift 5.10. The project setup involves a set of 3 benchmarks, each corresponding to one of the tasks above, the codegen tool that generates standardized projects, and a series of "project templates" used in combination with the codegen tool.
 
-We identified four key metrics to evaluate the performance impact of each DI system: startup time, access time, memory usage, and instructions count:
-- `Startup time` is the time used to generate the object graph container.
-- `Access time` is the time used to access the different objects within the container.
-- `Memory usage` represents how much RAM the system uses while performing the tasks (in megabytes).
-- `Instruction count` represents how many instructions the generated project executes to perform the tasks.
+We identified four key metrics to evaluate the performance impact of each DI system: startup time, access time, memory usage, and instructions count.
+- *Startup time* is the time used to generate the object graph container.
+- *Access time* is the time used to access the different objects within the container.
+- *Memory usage* represents how much RAM the system uses while performing the tasks (in megabytes).
+- *Instruction count* represents how many instructions the generated project executes to perform the tasks.
 
-These metrics capture the critical aspects of developer experience and runtime performance. To capture these metrics, we use a very recent benchmarking library called `SwiftBenchmark` @swift-benchmark. This library allows us to record and compare different measurements and easily set up the project using the Swift Package Manager @swift-package-manager.
+These metrics capture the critical aspects of runtime performance. To capture these metrics, we use a very recent benchmarking library called `SwiftBenchmark` @swift-benchmark. This library allows us to record and compare different measurements and easily set up the project using the Swift Package Manager @swift-package-manager.
 
 The baseline measurement provided a performance benchmark without any DI framework. This would serve as our control to understand the overhead introduced by each DI system. This baseline framework simply constructs each object in the correct order, like in @simpleGraph, and stores all of them in a dictionary keyed by the `ObjectIdentifier` of the type of object, shown in @objectAccess. This allows for an easy retrieval of the object by type.
 
@@ -238,16 +238,6 @@ For each integration, we repeated the performance tests using Instruments.
 
 
 
-
-== Developing a Zero-Cost Dependency Injection System
-
-Inspired by the zero-cost abstraction philosophy in C++, we embarked on designing our DI system with a focus on compile-time safety and minimal runtime overhead. The goal was to leverage Swift’s powerful type system to build a dependency graph at compile-time, thus eliminating the need for runtime resolution and associated overhead.
-
-We began by implementing a mechanism to build the dependency graph using Swift’s generics and protocols. This compile-time graph-building aimed to ensure that if the code compiled, the dependency graph was correctly constructed.
-
-Next, we developed a code generation tool to automate the creation of boilerplate code for dependency resolution. This tool was designed to integrate seamlessly with the build process, minimizing any additional complexity for developers.
-
-Finally, we focused on performance tuning, optimizing the generated code and the DI system for performance. Techniques such as caching and lazy initialization were employed to ensure minimal runtime overhead.
 
 == Evaluation
 

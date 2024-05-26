@@ -18,7 +18,6 @@ public struct SwiftDependenciesTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Dependencies
-        import func Benchmark.blackHole
 
         \(classes.reversed().map(\.swiftDependenciesRegistration).joined(separator: "\n"))
 

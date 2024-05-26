@@ -33,7 +33,6 @@ public struct CleanseTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Cleanse
-        import func Benchmark.blackHole
 
         public struct GeneratedByCleanse: GeneratedProject {
             public init() {}

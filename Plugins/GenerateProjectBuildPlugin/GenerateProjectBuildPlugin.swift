@@ -66,7 +66,6 @@ struct GenerateProjectBuildPlugin: BuildToolPlugin {
                     "generate",
                     context.pluginWorkDirectory.appending(subpath: "generated-by-needle.swift"),
                     context.pluginWorkDirectory,
-                    "--additional-imports", "import NeedleFoundation"
                 ],
                 outputFiles: [ context.pluginWorkDirectory.appending("generated-by-needle.swift") ])
         ]
