@@ -3,7 +3,6 @@ import ArgumentParser
 import SwiftGraph
 import SwiftWyhash
 import Foundation
-import Carpenter
 
 public struct CarpenterTemplate: ProjectTemplate {
     let classes: [ClassTemplate]

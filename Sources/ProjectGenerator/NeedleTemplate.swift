@@ -3,7 +3,6 @@ import ArgumentParser
 import SwiftGraph
 import SwiftWyhash
 import Foundation
-import NeedleFoundation
 
 public struct NeedleTemplate: ProjectTemplate {
     let classes: [ClassTemplate]
@@ -14,12 +13,6 @@ public struct NeedleTemplate: ProjectTemplate {
 
     public init(graph: UnweightedGraph<Int>) {
         self.init(classes: ClassTemplate.from(graph: graph))
-    }
-
-    class ContainerComponent: NeedleFoundation.BootstrapComponent {
-        var mock_10: Int {
-            shared { 1 }
-        }
     }
 
     public func contents(using rng: inout any RandomNumberGenerator) -> String {

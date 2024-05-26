@@ -19,11 +19,13 @@ let package = Package(
         .package(url: "https://github.com/lemire/SwiftWyhash", from: "0.1.1"),
         .package(url: "https://github.com/SwiftDocOrg/GraphViz", from: "0.4.1"),
         .package(url: "https://github.com/ordo-one/package-benchmark", .upToNextMajor(from: "1.23.1")),
+        
         .package(url: "https://github.com/Swinject/Swinject.git", from: "2.8.0"),
         .package(url: "https://github.com/hmlongco/Factory.git", from: "2.3.2"),
         .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.0.0"),
         .package(url: "https://github.com/square/Cleanse", from: "4.2.6"),
         .package(url: "https://github.com/uber/needle", from: "0.24.0"),
+
 //        .package(url: "https://github.com/TizianoCoroneo/Carpenter", from: "0.2.0"),
         .package(name: "Carpenter", path: "../Carpenter"),
         .package(name: "NeedleGenerator", path: "Generator"),
@@ -54,15 +56,9 @@ let package = Package(
             name: "ProjectGenerator",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                .product(name: "Dependencies", package: "swift-dependencies"),
                 "SwiftGraph",
                 "SwiftWyhash",
                 "GraphViz",
-                "Swinject",
-                "Factory",
-                "Cleanse",
-                .product(name: "Carpenter", package: "Carpenter"),
-                .product(name: "NeedleFoundation", package: "needle"),
             ]),
 
         .testTarget(
