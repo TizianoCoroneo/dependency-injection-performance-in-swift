@@ -132,13 +132,13 @@ While developing the `needle` library, Uber also made another library called `Po
 
 We conducted a series of benchmarks and analyses to investigate the tradeoffs and performance impact of dependency injection (DI) systems in iOS. This section outlines the procedures and criteria used to evaluate the frameworks.
 
-We developed a codegen tool that generates projects using each library under test, creating a large object graph; then we integrated this tool as a build-time plugin inside a benchmark suite that measures three different procedures:
+We developed a codegen tool that generates projects using each library under test, creating a large object graph. We integrated this tool as a build-time plugin inside a benchmark suite that measures three different procedures:
 
 1. *How long does it take to create the object graph?*
-For the largest object graphs, this is typically done once, at the start of the lifetime of a mobile application. The typical app has to initialize an API client, maybe a local database, deeplink handlers, push notification handlers, some kind of secure storage for passwords and sensitive data, a logging system... and most of these objects are interdependent and never deallocated for the lifetime of the application. Measuring the creation of the dependency injection system's object graph captures how long it takes for each library to create this first network of objects, which, from here on, we will call the "DI container".
+The most extensive object graphs are initialized only once at the start of the lifetime of a mobile application. The typical app has to initialize an API client, maybe a local database, deeplink handlers, push notification handlers, some secure storage for passwords and sensitive data, and a logging system... and most of these objects are interdependent and never deallocated for the lifetime of the application. Measuring the creation of the dependency injection system's object graph captures how long it takes for each library to create this first network of objects, which, from here on, we will call the "DI container."
   
-2. *How long does it take to access all objects in the dependency injection container?*
-This represents a proxy for common usage of the above-mentioned objects. Apps are making API calls, saving things to databases and caches, and accessing all these kinds of dependencies all the time. We approximate the typical usage of the objects in the dependency graph by simulating a high count of sequential accesses to the objects in the DI container.
+2. *How long does accessing all objects in the dependency injection container take?*
+This represents a proxy for the common usage of the above-mentioned objects. Apps make API calls, save things to databases and caches, and access all these kinds of dependencies all the time. We approximate the typical usage of the objects in the dependency graph by simulating a high number of sequential accesses to the objects in the DI container.
 
 3. *How long does it take to perform both tasks?*
 This value is used as a total score to compare the performance of each library.
@@ -147,96 +147,124 @@ This value is used as a total score to compare the performance of each library.
 
 The hardware used for benchmarking is a MacBook Pro equipped with an Apple M1 chip and 16GB of RAM. Software-wise, we used macOS Sonoma 14.5, Xcode 15.3, and Swift 5.10. The project setup involves a set of 3 benchmarks, each corresponding to one of the tasks above, the codegen tool that generates standardized projects, and a series of "project templates" used in combination with the codegen tool.
 
-We identified four key metrics to evaluate the performance impact of each DI system: startup time, access time, memory usage, and instructions count.
-- *Startup time* is the time used to generate the object graph container.
-- *Access time* is the time used to access the different objects within the container.
+We identified four key metrics to evaluate each DI system's performance impact: startup time, access time, memory usage, and instructions count.
+- *Startup time* is how long it takes to generate the object graph container.
+- *Access time* is how long it takes to access the different objects within the container.
 - *Memory usage* represents how much RAM the system uses while performing the tasks (in megabytes).
 - *Instruction count* represents how many instructions the generated project executes to perform the tasks.
 
-These metrics capture the critical aspects of runtime performance. To capture these metrics, we use a very recent benchmarking library called `SwiftBenchmark` @swift-benchmark. This library allows us to record and compare different measurements and easily set up the project using the Swift Package Manager @swift-package-manager.
+These metrics capture the critical aspects of runtime performance. We use a recent benchmarking library called `SwiftBenchmark` @swift-benchmark to capture these metrics. This library lets us record and compare measurements and quickly set up the project using the Swift Package Manager @swift-package-manager.
 
-The baseline measurement provided a performance benchmark without any DI framework. This would serve as our control to understand the overhead introduced by each DI system. This baseline framework simply constructs each object in the correct order, like in @simpleGraph, and stores all of them in a dictionary keyed by the `ObjectIdentifier` of the type of object, shown in @objectAccess. This allows for an easy retrieval of the object by type.
+The baseline measurement provided a performance benchmark without any DI framework. A project using no external library would serve as our control to understand the overhead introduced by each DI system. This baseline framework constructs each object in the correct order, like in @simpleGraph, and stores all of them in a dictionary keyed by the `ObjectIdentifier` of the type of object, as shown in @objectAccess. Storing the objects in such a collection allows for an easy retrieval of the built objects by type.
 
 #figure(
   box(height: 180pt, columns(2, gutter: 0pt)[
     ```swift
-    let a = A()
-    let b = B(a: a)
-    let c = C(a: a)
-    let d = D(b: b)
-    let e = E(c: c, d: d)
-    let f = F(c: c, d: d)
-    let g = G(b: b)
-    let h = H(g: g)
-    ```
+ let a = A()
+ let b = B(a: a)
+ let c = C(a: a)
+ let d = D(b: b)
+ let e = E(c: c, d: d)
+ let f = F(c: c, d: d)
+ let g = G(b: b)
+ let h = H(g: g)
+ ```
     #simpleGraph
-  ]),
-  caption: "This piece of code initializes a number of objects in topological order. The arrows in the graph indicate a \"depends on\" relation."
+ ]),
+  caption: "This piece of code initializes several objects in topological order. The arrows in the graph indicate a \"depends on\" relation."
 ) <simpleGraph>
 
 #figure(
 ```swift
-    [
-        ObjectIdentifier(A.self): a as Any,
-        ObjectIdentifier(B.self): b as Any,
-        ObjectIdentifier(C.self): c as Any,
-        ObjectIdentifier(D.self): d as Any,
-        ObjectIdentifier(E.self): e as Any,
-        ObjectIdentifier(F.self): f as Any,
-        ObjectIdentifier(G.self): g as Any,
-        ObjectIdentifier(H.self): h as Any
-    ]
+ [
+ ObjectIdentifier(A.self): a as Any,
+ ObjectIdentifier(B.self): b as Any,
+ ObjectIdentifier(C.self): c as Any,
+ ObjectIdentifier(D.self): d as Any,
+ ObjectIdentifier(E.self): e as Any,
+ ObjectIdentifier(F.self): f as Any,
+ ObjectIdentifier(G.self): g as Any,
+ ObjectIdentifier(H.self): h as Any
+ ]
 ```,
-caption: "This is how the built objects graph is stored in the baseline project. ObjectIdentifier is a unique pointer to the metadata of the type in the Swift runtime, guaranteeing that we have a unique value for each type in the dictionary."
+caption: "This is how the simple template project stores the built objects graph. ObjectIdentifier is a unique pointer to that type's metadata in the Swift runtime, guaranteeing a unique value for each type in the dictionary."
 ) <objectAccess>
 
 
 
 == Development process
 
-The process began by creating a small project generator able to take a generic graph, generate a class for each node and a property for each edge. For an edge _e_ from _A_ to _B_, the codegen would generate the following code:
+The process began by creating a small project generator to take a generic graph and generate a class for each node and a property for each edge. For an edge _e_ from _A_ to _B_, the codegen would generate the following code:
 ```swift
 class A {
-  let b: B
-  init(b: B) { self.b = b }
+ let b: B
+ init(b: B) { self.b = b }
 }
 class B {
-  init() {}
+ init() {}
 }
 ```
 
-The next step was to add more generators, one for each library, according to each library documentation and best practices. Most libraries are very similar in their setup and operation, so that didn't take long, with one glaring exception: Uber's `needle` library also contained a code generation step. Figuring out how to chain two build plugins that depend on each other in the Swift Package Manager has been an interesting journey in itself.
+The next step was to add more generators, one for each library, according to each library's documentation and best practices. Most libraries are very similar in their setup and operation, so that did not take long, with one glaring exception: Uber's `needle` library also contained a code generation step. Figuring out how to chain two build plugins that depend on each other in the Swift Package Manager has been an exciting debugging journey.
 
-The implementation of the benchmarks on top of the generated project didn't take long, as all generated projects adhere to the same protocol, so that we can use polymorphism to reuse the benchmark code regardless of which library is used internally. Specifically, the projects implement the following protocol:
+Implementing the benchmarks on top of the generated project took little time, as all generated projects adhere to the same protocol, so we can use polymorphism to reuse the benchmark code regardless of which library is adopted internally. Specifically, the projects implement the following protocol:
 
 ```Swift
 protocol GeneratedProject {
-    associatedtype Container
-    // Create an object graph and store it in a box
-    func makeContainer() -> Container
-    // Access every object in the box
-    func accessAllInContainer(_ container: Container)
+ associatedtype Container
+ // Create an object graph and store it in a box
+ func makeContainer() -> Container
+ // Access every object in the box
+ func accessAllInContainer(_ container: Container)
 }
 ```
 
-To perform the benchmark we used the facilities provided by the `SwiftBenchmark` library: running the following script from the root folder of the project is enough to download dependencies, compile everything, generate the template projects, run the benchmarks, and generate a report in JMH format for later analysis:
+To perform the benchmark, we used the facilities provided by the `SwiftBenchmark` library: running the following script from the root folder of the project is enough to download dependencies, compile everything, generate the template projects, run the benchmarks, and generate a report in JMH format for later analysis:
 ```bash
 swift package --allow-writing-to-package-directory benchmark --format jmh
 ```
 
-The report contains informations for each of the three benchmarks: "Access all", "Create container", and "Complete run".
+The report contains information for each of the three benchmarks: "Access all," "Create container," and "Complete run."
 
-To make sure that the benchmark operations were implemented correctly, we analyzed the behavior of the generated projects using Apple's `Instruments` profiling tool. This required the addition of a new target to the project (named, creatively, "Profiler target"), specifically for running the generated projects in the profiler with all optimizations.
+To ensure that the benchmark operations were implemented correctly, we analyzed the behavior of the generated projects using Apple's Instruments profiling tool. This required adding a new target to the project (named, creatively, "Profiler target"), specifically for running the generated projects in the profiler with all optimizations.
 For each integration, we repeated the performance tests using Instruments.
 
 #figure(
   moduleGraph,
   caption: "The green elements represent the contributions in this paper."
-  ) <moduleGraph>
+ ) <moduleGraph>
 
 == Benchmark results
 
+#grid(columns: (33%, 33%, 33%)) [
+  #columns([
+    sdfjalsdk
+  ])
+  tasdljf lsdjflasdkjf labela
 
+  aldkflaskjdflkajdslfkjasd
+
+  alskdjflaskjdlfjk
+
+  tasdljf lsdjflasdkjf labela
+
+  aldkflaskjdflkajdslfkjasd
+
+  alskdjflaskjdlfjk
+
+  tasdljf lsdjflasdkjf labela
+
+  aldkflaskjdflkajdslfkjasd
+
+  alskdjflaskjdlfjk
+
+  tasdljf lsdjflasdkjf labela
+
+  aldkflaskjdflkajdslfkjasd
+
+  alskdjflaskjdlfjk
+
+]
 
 
 == Evaluation
