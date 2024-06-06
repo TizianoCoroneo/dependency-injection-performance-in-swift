@@ -79,7 +79,6 @@ let package = Package(
 package.targets += [
     benchmark("CreateContainer"),
     benchmark("AccessAll"),
-    benchmark("Complete"),
 ]
 
 func benchmark(

@@ -1,6 +1,6 @@
 
 #set document(
-  title: [A zero-cost dependency injection system],
+  title: [A zero-cost dependency injection system?],
   author: "Tiziano Coroneo",
   date: auto
 )
@@ -17,7 +17,7 @@
 
 = Introduction
 
-Consider the following piece of Swift code:
+Consider the following piece of Swift 5.10 code:
 
 ```Swift
 class APIClient {
@@ -35,10 +35,12 @@ class CheckoutService {
 }
 ```
 
+Instances of the class `CheckoutService` need to use the services offered by `APIClient`... somehow. In this implementation, during the initialization of `CheckoutService` we also create an instance of `APIClient` out of the blue and proceed to use its `request(url:)` method to perform the checkout by contacting an unspecified backend API.
+
 If you need an instance of `CheckoutService` to perform the checkout operation, you can simply instantiate the class and checkout away. But what if you have multiple classes that require a reference to the same `APIClient`? What if you need multiple instances of the `CheckoutService`, each with a slightly differently configured `APIClient`? What if you want to unit-test the `CheckoutService` class?
 In all these cases, you want to _inject_ the specific `APIClient` instance that the `CheckoutService` _depends on_.
 
-For example, you may pass the specific instance of the `APIClient` to use in the initializer of the `CheckoutService` class:
+For example, you may pass the specific instance of the `APIClient` to use in the initializer of the `CheckoutService` class, a method called "Constructor Injection" by Martin Fowler @fowler2004inversion:
 
 ```Swift
 class CheckoutService {
@@ -55,7 +57,7 @@ class CheckoutService {
 let checkout = CheckoutService(apiClient: APIClient())
 ```
 
-Another option is to assign the instance to a property on the `CheckoutService` after initialization is complete: 
+Another option is to assign the instance to a property on the `CheckoutService` after initialization is complete, called "Setter Injection": 
 
 ```Swift
 class CheckoutService {
@@ -93,7 +95,7 @@ As they grow, their internal structures also grow so complex that a substantial 
 A category of these support systems is "Dependency Injection" (DI) @fowler2004inversion. 
 
 DI solves the problem of ~isolating sections of code from their direct dependencies~ so that unit testing is as easy as possible while not overcomplicating the code base with additional functionality only meant to support testing.
-DI systems solve this issue by splitting building objects from using them and removing strong coupling between components @seemann2011dependency. They typically do so by defining some kind of _object container_ that builds an object graph of interconnected dependencies while maintaining loose coupling between each node of the graph; in addition to that, they also provide a convenient way to access each node in the graph, so that such accesses can easily be modified in unit tests to verify the implementation of a feature.
+DI systems solve this issue by splitting building objects from using them and removing strong coupling between components @seemann2011dependency. They typically do so by defining some kind of _object container_ that holds the dependencies needed by your program, provides an easy access to the objects within, and allows to override objects to test different scenarios.
 
 DI is a common feature of many ecosystems: in Android apps, `Dagger` @square-dagger @google-dagger is the most common library, while in `.NET` there is an integrated DI system in the `IServiceCollection` API. In iOS there is no standard, first-party solution, but many different libraries are available with different APIs, capabilities, and tradeoffs.
 The most popular library is `Swinject`, with \~6200 stars on GitHub, followed by Square's `Cleanse` with ~1800 stars, Uber's `needle`@uber-needle with ~1700 stars, `Factory`@long-factory with ~1600 stars, and the latest entry, `swift-dependencies`@pointfreeco-swift-dependencies with ~1400 stars.
@@ -112,7 +114,7 @@ We will benchmark these frameworks to evaluate their performance impact in diffe
   What is the performance impact of dependency injection systems in iOS?
 ]
 
-Then, we will present a new library to optimize the performance of the _graph-building_ part of a dependency injection system, and I will benchmark its performance compared to the mainstream open-source alternatives previously mentioned, (hopefully) achieving a _zero-cost dependency injection system_, and providing an answer to the main research question (*MQ*):
+Then, we will present a new library to optimize the performance of the access part of a dependency injection system, and I will benchmark its performance compared to the mainstream open-source alternatives previously mentioned, discussing what does it mean to be a _zero-cost dependency injection system_, and providing an answer to the main research question (*MQ*):
 
 #quote[
   Is a zero-cost dependency injection system possible?
@@ -132,30 +134,33 @@ While developing the `needle` library, Uber also made another library called `Po
 
 We conducted a series of benchmarks and analyses to investigate the tradeoffs and performance impact of dependency injection (DI) systems in iOS. This section outlines the procedures and criteria used to evaluate the frameworks.
 
-We developed a codegen tool that generates projects using each library under test, creating a large object graph. We integrated this tool as a build-time plugin inside a benchmark suite that measures three different procedures:
+We developed a codegen tool that generates projects using each library under test, creating a large object graph. We integrated this tool as a build-time plugin inside a benchmark suite that measures two different procedures:
 
 1. *How long does it take to create the object graph?*
 The most extensive object graphs are initialized only once at the start of the lifetime of a mobile application. The typical app has to initialize an API client, maybe a local database, deeplink handlers, push notification handlers, some secure storage for passwords and sensitive data, and a logging system... and most of these objects are interdependent and never deallocated for the lifetime of the application. Measuring the creation of the dependency injection system's object graph captures how long it takes for each library to create this first network of objects, which, from here on, we will call the "DI container."
   
 2. *How long does accessing all objects in the dependency injection container take?*
-This represents a proxy for the common usage of the above-mentioned objects. Apps make API calls, save things to databases and caches, and access all these kinds of dependencies all the time. We approximate the typical usage of the objects in the dependency graph by simulating a high number of sequential accesses to the objects in the DI container.
+This represents common usage patterns of the above-mentioned objects. Apps make API calls, save things to databases and caches, get the current time/date/locale/location, and access all these kinds of dependencies all the time. We approximate the typical usage of the objects in the dependency graph by simulating a high number of sequential accesses to the objects in the DI container.
 
-3. *How long does it take to perform both tasks?*
-This value is used as a total score to compare the performance of each library.
+=== Is a zero-cost dependency injection system... desirable?
+
+In the evaluation of dependency injection (DI) systems, it's important to differentiate between the costs associated with "creating the graph" and those tied to "accessing the graph." 
+
+Creating the graph is a foundational step that typically occurs once, usually at application launch. Since this process is a one-time overhead, performance concerns are relatively minor as long as the initialization completes within an acceptable threshold, such as under 10 milliseconds. In practice, this means that even if graph creation is slightly slower, it might not significantly impact the overall user experience as long as it stays within these bounds. On the other hand, accessing the graph is an operation that occurs repeatedly throughout the application's lifecycle. This frequent interaction with the DI system means that the performance of accessing the graph is critical and should be optimized. The quicker and more efficiently an application can access its DI graph, the better it will perform during regular use. Therefore, when assessing or designing a DI system, emphasis should be placed on optimizing how the system handles repeated accesses to the object graph, ensuring swift and efficient retrieval and interaction with the dependencies it manages.
 
 == Benchmarking Setup
 
-The hardware used for benchmarking is a MacBook Pro equipped with an Apple M1 chip and 16GB of RAM. Software-wise, we used macOS Sonoma 14.5, Xcode 15.3, and Swift 5.10. The project setup involves a set of 3 benchmarks, each corresponding to one of the tasks above, the codegen tool that generates standardized projects, and a series of "project templates" used in combination with the codegen tool.
+The hardware used for benchmarking is a MacBook Pro equipped with an Apple M1 chip and 16GB of RAM. Software-wise, we used macOS Sonoma 14.5, Xcode 15.4, and Swift 5.10. The project setup involves the two benchmarks, the codegen tool that generates standardized projects, and a series of "project templates" used in combination with the codegen tool.
 
 We identified four key metrics to evaluate each DI system's performance impact: startup time, access time, memory usage, and instructions count.
 - *Startup time* is how long it takes to generate the object graph container.
 - *Access time* is how long it takes to access the different objects within the container.
 - *Memory usage* represents how much RAM the system uses while performing the tasks (in megabytes).
-- *Instruction count* represents how many instructions the generated project executes to perform the tasks.
+- *Instruction count* represents how many instructions the generated project executes to perform the tasks, as a proxy for the final binary size.
 
 These metrics capture the critical aspects of runtime performance. We use a recent benchmarking library called `SwiftBenchmark` @swift-benchmark to capture these metrics. This library lets us record and compare measurements and quickly set up the project using the Swift Package Manager @swift-package-manager.
 
-The baseline measurement provided a performance benchmark without any DI framework. A project using no external library would serve as our control to understand the overhead introduced by each DI system. This baseline framework constructs each object in the correct order, like in @simpleGraph, and stores all of them in a dictionary keyed by the `ObjectIdentifier` of the type of object, as shown in @objectAccess. Storing the objects in such a collection allows for an easy retrieval of the built objects by type.
+First, we need a baseline to test the other libraries against: a project that simply creates the graph "by hand" without using any DI framework. A project using no external library would serve as our control to understand the overhead introduced by each DI system. This baseline framework constructs each object in the correct order, like in @simpleGraph, and stores all of them in a dictionary keyed by the `ObjectIdentifier` of the type of object, as shown in @objectAccess. Storing the objects in such a collection allows for an easy retrieval of the built objects by type.
 
 #figure(
   box(height: 180pt, columns(2, gutter: 0pt)[
@@ -190,7 +195,7 @@ The baseline measurement provided a performance benchmark without any DI framewo
 caption: "This is how the simple template project stores the built objects graph. ObjectIdentifier is a unique pointer to that type's metadata in the Swift runtime, guaranteeing a unique value for each type in the dictionary."
 ) <objectAccess>
 
-
+#pagebreak()
 
 == Development process
 
@@ -212,10 +217,8 @@ Implementing the benchmarks on top of the generated project took little time, as
 ```Swift
 protocol GeneratedProject {
  associatedtype Container
- // Create an object graph and store it in a box
- func makeContainer() -> Container
- // Access every object in the box
- func accessAllInContainer(_ container: Container)
+ func makeContainer() -> Container // Create an object graph and store it in a box
+ func accessAllInContainer(_ container: Container) // Access every object in the box
 }
 ```
 
@@ -224,72 +227,95 @@ To perform the benchmark, we used the facilities provided by the `SwiftBenchmark
 swift package --allow-writing-to-package-directory benchmark --format jmh
 ```
 
-The report contains information for each of the three benchmarks: "Access all," "Create container," and "Complete run."
+The report contains information for each of the benchmarks: "Access all" and "Create container."
+
+#pagebreak()
 
 To ensure that the benchmark operations were implemented correctly, we analyzed the behavior of the generated projects using Apple's Instruments profiling tool. This required adding a new target to the project (named, creatively, "Profiler target"), specifically for running the generated projects in the profiler with all optimizations.
 For each integration, we repeated the performance tests using Instruments.
 
 #figure(
   moduleGraph,
-  caption: "The green elements represent the contributions in this paper."
+  caption: "This is module graph of the project. The benchmarks run the project generation tool at compile time as a build plugin to create the test projects, while also importing the various DI frameworks runtimes. The green elements represent the contributions in this paper."
  ) <moduleGraph>
+
+#pagebreak()
+== Generated code samples
+
+```swift
+
+```
 
 == Benchmark results
 
-#grid(columns: (33%, 33%, 33%)) [
-  #columns([
-    sdfjalsdk
-  ])
-  tasdljf lsdjflasdkjf labela
+=== Creating the object graph
 
-  aldkflaskjdflkajdslfkjasd
+#figure(
+  image("create-instructions.png")
+)
 
-  alskdjflaskjdlfjk
+#figure(
+  image("create-time.png")
+)
 
-  tasdljf lsdjflasdkjf labela
+#figure(
+  image("create-memory.png")
+)
 
-  aldkflaskjdflkajdslfkjasd
+#pagebreak()
+=== Object access
 
-  alskdjflaskjdlfjk
+#figure(
+  image("access-instructions.png")
+)
 
-  tasdljf lsdjflasdkjf labela
+#figure(
+  image("access-time.png")
+)
 
-  aldkflaskjdflkajdslfkjasd
+#figure(
+  image("access-memory.png")
+)
 
-  alskdjflaskjdlfjk
+#pagebreak()
+=== Complete benchmark
 
-  tasdljf lsdjflasdkjf labela
+#figure(
+  image("complete-instructions.png")
+)
 
-  aldkflaskjdflkajdslfkjasd
+#figure(
+  image("complete-time.png")
+)
 
-  alskdjflaskjdlfjk
-
-]
-
-
-== Evaluation
-
-To evaluate the effectiveness of our zero-cost DI system, we conducted the same set of benchmarks. This provided a direct comparison against the mainstream DI frameworks, allowing us to see if our system truly achieved zero-cost abstraction.
-
-Additionally, we conducted case studies on existing iOS projects. These case studies aimed to validate the practical applicability of our DI system, focusing on ease of integration, impact on developer productivity, and real-world performance.
+#figure(
+  image("complete-memory.png")
+)
 
 = Results and Discussion
 
-The results of our benchmarks revealed fascinating insights into the tradeoffs and performance impacts of each DI framework.
-
 Swinject, while highly versatile, introduced significant runtime overhead, especially in startup time and memory usage. Cleanse provided excellent compile-time guarantees, but its compile-time graph-building increased overall compilation time. Needle, optimized for large-scale applications, demonstrated impressive runtime performance with minimal overhead, though it required more complex setup and integration. Factory, with its lightweight functional approach, offered a good balance between simplicity and performance but lacked some advanced features. Swift-dependencies showed promise with modern Swift features but still had room for optimization.
 
-In contrast, our zero-cost DI system demonstrated near-baseline performance across all metrics. Compilation times were slightly higher due to the code generation process, but startup times, memory usage, and execution times were nearly identical to the baseline. This validated our hypothesis that a zero-cost dependency injection system is achievable.
+=== Static Initialization Impact
+`swift-dependencies` and `Needle` demonstrate minimal instruction counts and exceptionally low initialization times (2 µs and 10 µs respectively). This performance is attributed to their static initialization method, where each object is initialized as a static property on a helper object. This object is then retained for later use within the lifetime of the program, defeating the benchmark setup. This method results in very fast access times in benchmarks but does not reflect the real cost of initialization during app launch. We found out the hard way that this benchmarking approach is not sufficient to track the performance of code running in static initializers.
 
-== Case Study Findings
+=== Memory and Dynamic Initialization Considerations
+Both `Carpenter` and `Cleanse` exhibit higher instruction counts and longer initialization times (over 20 million instructions and around 2,028 µs to 2,800 µs) compared to Simple, which only requires 318,110 instructions and 25 µs. The increased costs for these systems arise from their creation of additional runtime representations of objects. This involves extra allocations and management overhead, leading to increased memory usage and computational time. This complexity can be beneficial for applications that require additional features at the cost of performance, such as needing dynamic object configurations or sophisticated lifecycle management, in the case of Cleanse, or better visualization tools, developer experience, and additional facilities related to property-injection, in the case of Carpenter.
 
-The case studies provided further insights into the real-world applicability of our DI system. Integration into existing projects was straightforward, with minimal changes required to the codebase. Developers reported increased productivity due to the compile-time guarantees and reduced debugging time. Real-world performance observations aligned with our benchmark results, confirming minimal runtime overhead.
+=== General Observations
+While `swift-dependencies` and `Needle` might appear more efficient due to their lower runtime overhead in benchmark scenarios, this doesn't necessarily translate to efficiency in real-world applications that require flexible, dynamic DI capabilities. A different benchmarking setup is required to measure their impact.
+The `Simple` implementation is preferable for scenarios where DI overhead needs to be minimized, offering straightforward and efficient object graph creation, but it's very impractical to maintain by hand in the long run.
+On the other hand, `Cleanse` cater to applications that benefit from advanced DI features, justifying its higher initial resource consumption with the capabilities they bring to complex application environments. `Carpenter` makes a similar trade-off, improving developer-experience at the expense of runtime performance.
 
 = Conclusion
+This paper has explored the design, implementation, and evaluation of dependency injection systems in iOS. Through benchmarking, we have shown the hidden costs of injection systems, and found that trade-offs are unavoidable, as in the rest of the field of Computer Science. Our findings provide a valuable tool for iOS developers seeking to manage complexity in large-scale applications without compromising performance.
 
-This paper has explored the design, implementation, and evaluation of dependency injection systems in iOS. Through rigorous benchmarking and real-world case studies, we have demonstrated that a zero-cost dependency injection system is not only possible but also practical. Our findings provide a valuable tool for iOS developers seeking to manage complexity in large-scale applications without compromising performance.
+The choice of DI system should consider specific application requirements, balancing initialization speed, runtime performance, and memory usage against the need for dynamic configuration and object management capabilities offered by more complex DI systems. This benchmark analysis highlights the trade-offs involved, guiding developers in selecting the most appropriate DI system based on their specific performance criteria and application architecture.
+
 
 == Future Work
+
+A different benchmarking setup is required to properly measure the impact of frameworks such as `swift-dependencies` and `needle`.
 
 Future work could explore further optimizations to the zero-cost DI system, such as integrating with SwiftUI and other modern Swift features. Additionally, extending the benchmarking to other platforms and languages could provide a more comprehensive understanding of DI systems' performance impacts. Expanding the adoption of the zero-cost DI system within the iOS developer community could also yield valuable feedback and improvements.
 

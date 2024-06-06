@@ -65,17 +65,17 @@ digraph G {
 
     access[label="Access all"]
     create[label="Create container"]
-    complete[label="Complete run"]
     profiler[label="Profiler target"]
   }
 
   projectgen_plugin -> needle_exe
 
-  create -> projectgen_plugin [ltail=cluster_3];
-  create -> Factory [ltail=cluster_3 lhead=cluster_4];
+  create -> projectgen_plugin [ltail=cluster_3 label="Using a build plugin running \nat compile time"]
+  create -> Factory [ltail=cluster_3 lhead=cluster_4 label="Using DI frameworks at runtime"];
+
+  projectgen_plugin -> SwiftWyhash [lhead=cluster_5];
 
   a[style=invis, label=""]
-
   access -> a [style=invis]
   a -> projectgen_plugin [style=invis]
 }
