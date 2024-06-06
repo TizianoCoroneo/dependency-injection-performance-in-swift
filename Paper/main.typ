@@ -1,6 +1,8 @@
 
+#let paperTitle = "A zero-cost dependency injection system?"
+
 #set document(
-  title: [A zero-cost dependency injection system?],
+  title: [ paperTitle ],
   author: "Tiziano Coroneo",
   date: auto
 )
@@ -13,7 +15,7 @@
 #import "cover.typ": cover
 #import "graphs.typ": *
 
-#cover()
+#cover(paperTitle: paperTitle)
 
 = Introduction
 
@@ -98,7 +100,8 @@ DI solves the problem of ~isolating sections of code from their direct dependenc
 DI systems solve this issue by splitting building objects from using them and removing strong coupling between components @seemann2011dependency. They typically do so by defining some kind of _object container_ that holds the dependencies needed by your program, provides an easy access to the objects within, and allows to override objects to test different scenarios.
 
 DI is a common feature of many ecosystems: in Android apps, `Dagger` @square-dagger @google-dagger is the most common library, while in `.NET` there is an integrated DI system in the `IServiceCollection` API. In iOS there is no standard, first-party solution, but many different libraries are available with different APIs, capabilities, and tradeoffs.
-The most popular library is `Swinject`, with \~6200 stars on GitHub, followed by Square's `Cleanse` with ~1800 stars, Uber's `needle`@uber-needle with ~1700 stars, `Factory`@long-factory with ~1600 stars, and the latest entry, `swift-dependencies`@pointfreeco-swift-dependencies with ~1400 stars.
+The most popular library is `Swinject`, with \~6200 stars on GitHub, followed by Square's `Cleanse` with ~1800 stars, Uber's `needle`@uber-needle with ~1700 stars, `Factory`@long-factory with ~1600 stars, and the latest entry, `swift-dependencies`@pointfreeco-swift-dependencies with ~1400 stars. We will also measure the performance of a dependency injection that I wrote myself a few years ago: `Carpenter`.
+
 Uber's implementation is particularly interesting, as it offers unique tradeoffs: while most DI systems resolve their dependency graph representation at run-time, their application is so large that they found the need to write their own high-performance, compile-time safe DI system, doing their best to keep the impact on compilation times low.
 Their choices in designing this library offer insights into the different costs associated with dependency injection: a run-time solution is easier to implement than a compile-time build plugin, but it offers less type safety and impacts an application's startup time. A compile-time solution provides better safety guarantees ("if it compiles, it works!"), and higher performance at run-time, but it risks slowing down the development cycle by increasing build times locally and in continuous integration.
 
@@ -200,7 +203,8 @@ caption: "This is how the simple template project stores the built objects graph
 == Development process
 
 The process began by creating a small project generator to take a generic graph and generate a class for each node and a property for each edge. For an edge _e_ from _A_ to _B_, the codegen would generate the following code:
-```swift
+
+#figure(```swift
 class A {
  let b: B
  init(b: B) { self.b = b }
@@ -208,26 +212,41 @@ class A {
 class B {
  init() {}
 }
-```
+```)
 
 The next step was to add more generators, one for each library, according to each library's documentation and best practices. Most libraries are very similar in their setup and operation, so that did not take long, with one glaring exception: Uber's `needle` library also contained a code generation step. Figuring out how to chain two build plugins that depend on each other in the Swift Package Manager has been an exciting debugging journey.
 
 Implementing the benchmarks on top of the generated project took little time, as all generated projects adhere to the same protocol, so we can use polymorphism to reuse the benchmark code regardless of which library is adopted internally. Specifically, the projects implement the following protocol:
 
-```Swift
+#figure(```Swift
 protocol GeneratedProject {
  associatedtype Container
  func makeContainer() -> Container // Create an object graph and store it in a box
  func accessAllInContainer(_ container: Container) // Access every object in the box
 }
-```
+```)
 
 To perform the benchmark, we used the facilities provided by the `SwiftBenchmark` library: running the following script from the root folder of the project is enough to download dependencies, compile everything, generate the template projects, run the benchmarks, and generate a report in JMH format for later analysis:
-```bash
+#figure(```bash
 swift package --allow-writing-to-package-directory benchmark --format jmh
-```
+```)
 
-The report contains information for each of the benchmarks: "Access all" and "Create container."
+The report contains information for each of the benchmarks: "Access all" and "Create container." I used the JMH online visualizer to display the results.
+
+#pagebreak()
+
+We will be measuring the performance of each DI system on a randomly generated hierarchical DAG, with characteristics determined by the "project.spec" file within each benchmark folder. This file contains the following data:
+- Width: how wide should each layer of the graph be? (10-15)
+- Height: how many layers should the graph have? (10, 15)
+- Density: what's the probability that a node in a layer has an edge to a node in the next layer? (0.8)
+- Seed: the seed of the random number generator. (1000)
+
+We also implemented an integration with GraphViz to display an example of the magnificent graphs that will be the object of these tests:
+
+#figure(
+  image("monster-graph.jpeg"),
+  caption: "A somewhat realistic proxy for the typical enterprise application."
+)
 
 #pagebreak()
 
@@ -240,11 +259,6 @@ For each integration, we repeated the performance tests using Instruments.
  ) <moduleGraph>
 
 #pagebreak()
-== Generated code samples
-
-```swift
-
-```
 
 == Benchmark results
 
@@ -278,52 +292,36 @@ For each integration, we repeated the performance tests using Instruments.
 )
 
 #pagebreak()
-=== Complete benchmark
-
-#figure(
-  image("complete-instructions.png")
-)
-
-#figure(
-  image("complete-time.png")
-)
-
-#figure(
-  image("complete-memory.png")
-)
 
 = Results and Discussion
 
-Swinject, while highly versatile, introduced significant runtime overhead, especially in startup time and memory usage. Cleanse provided excellent compile-time guarantees, but its compile-time graph-building increased overall compilation time. Needle, optimized for large-scale applications, demonstrated impressive runtime performance with minimal overhead, though it required more complex setup and integration. Factory, with its lightweight functional approach, offered a good balance between simplicity and performance but lacked some advanced features. Swift-dependencies showed promise with modern Swift features but still had room for optimization.
+`Swinject` and `Cleanse`, while highly versatile and providing excellent compile-time guarantees, introduced significant runtime overhead, especially in access time. `Needle`, optimized for large-scale applications, demonstrated impressive runtime performance with minimal overhead, though it required more complex setup and integration. `Carpenter` offers a very limited set of functionality, and pays the price of a relatively slow startup time to reap the benefits of fast access to the object graph.  `swift-dependencies` and `Factory`, with their lightweight functional approach, offered a good balance between simplicity and performance, while offering plenty of advanced features.
 
 === Static Initialization Impact
-`swift-dependencies` and `Needle` demonstrate minimal instruction counts and exceptionally low initialization times (2 µs and 10 µs respectively). This performance is attributed to their static initialization method, where each object is initialized as a static property on a helper object. This object is then retained for later use within the lifetime of the program, defeating the benchmark setup. This method results in very fast access times in benchmarks but does not reflect the real cost of initialization during app launch. We found out the hard way that this benchmarking approach is not sufficient to track the performance of code running in static initializers.
+`swift-dependencies` and `Needle` demonstrate minimal instruction counts and exceptionally low initialization times (2 µs and 10 µs respectively). 
+These results are quite baffling: how can they go faster than the simple implementation, and make the compiler emit less instructions? In the case of `swift-dependency`, this library expects you to register dependencies as static properties on an object, so that they will be initialized once by the application. `Needle` shows similar results for a similar reason.
+
+This method results in very fast access times in benchmarks but does not reflect the real cost of initialization during app launch. We found out the hard way that this benchmarking approach is not sufficient to track the performance of code running in static initializers. How to measure the performance of the static initialization of variables is unclear and requires further research; for this reason, we will not consider the costs of initializing the object graph when using this framework.
 
 === Memory and Dynamic Initialization Considerations
-Both `Carpenter` and `Cleanse` exhibit higher instruction counts and longer initialization times (over 20 million instructions and around 2,028 µs to 2,800 µs) compared to Simple, which only requires 318,110 instructions and 25 µs. The increased costs for these systems arise from their creation of additional runtime representations of objects. This involves extra allocations and management overhead, leading to increased memory usage and computational time. This complexity can be beneficial for applications that require additional features at the cost of performance, such as needing dynamic object configurations or sophisticated lifecycle management, in the case of Cleanse, or better visualization tools, developer experience, and additional facilities related to property-injection, in the case of Carpenter.
+Both `Carpenter` and `Cleanse` exhibit higher instruction counts and longer initialization times (over 20 million instructions and around 2,028 µs to 2,800 µs) compared to Simple, which only requires 318,110 instructions and 25 µs. The increased costs for these systems arise from their creation of additional runtime representations of objects. This involves extra allocations and management overhead, leading to increased memory usage and computational time. This complexity can be beneficial for applications that require additional features at the cost of performance, such as needing dynamic object configurations or sophisticated lifecycle management, in the case of `Cleanse`, or better visualization tools, developer experience, and additional facilities related to property-injection, in the case of `Carpenter`.
 
 === General Observations
-While `swift-dependencies` and `Needle` might appear more efficient due to their lower runtime overhead in benchmark scenarios, this doesn't necessarily translate to efficiency in real-world applications that require flexible, dynamic DI capabilities. A different benchmarking setup is required to measure their impact.
-The `Simple` implementation is preferable for scenarios where DI overhead needs to be minimized, offering straightforward and efficient object graph creation, but it's very impractical to maintain by hand in the long run.
-On the other hand, `Cleanse` cater to applications that benefit from advanced DI features, justifying its higher initial resource consumption with the capabilities they bring to complex application environments. `Carpenter` makes a similar trade-off, improving developer-experience at the expense of runtime performance.
+The slowest system in the "Creating the graph" category only takes 2.600µs, which is within the acceptable range that we talked about in previous sections. It could be that we are simply working on too small a dependency graph. This poses the question: how big should the graph be in order for its construction to take enough time to block the main thread for at least one frame? Also: does this mean that all dependency injection systems are zero-cost dependency injection systems?
+
+The access times are more interesting. The slowest library takes 2.742µs to access its build graph: this cost could contribute to app slowdowns if it needs to be payed multiple times during the lifetime of the application.
+
+#pagebreak()
 
 = Conclusion
-This paper has explored the design, implementation, and evaluation of dependency injection systems in iOS. Through benchmarking, we have shown the hidden costs of injection systems, and found that trade-offs are unavoidable, as in the rest of the field of Computer Science. Our findings provide a valuable tool for iOS developers seeking to manage complexity in large-scale applications without compromising performance.
 
-The choice of DI system should consider specific application requirements, balancing initialization speed, runtime performance, and memory usage against the need for dynamic configuration and object management capabilities offered by more complex DI systems. This benchmark analysis highlights the trade-offs involved, guiding developers in selecting the most appropriate DI system based on their specific performance criteria and application architecture.
-
+This paper has explored the evaluation of dependency injection systems in iOS. Through benchmarking, we have shown that the hidden costs of injection systems are hidden not because of misleading documentation, but because they are too small to show up on any profiler pointed at your typical iOS application. Trade-offs are unavoidable, as in the rest of the field of Computer Science, but in this case the differences are so small that, as library designers, we can afford to focus on the developer-experience without worries about the runtime performance of our application in most cases. Our findings also provide a valuable tool for other iOS engineers to benchmark large scale systems by adding new project templates to the generator.
 
 == Future Work
 
-A different benchmarking setup is required to properly measure the impact of frameworks such as `swift-dependencies` and `needle`.
+A different benchmarking setup is required to properly measure the impact of frameworks such as `swift-dependencies` and `needle`. It would also be interesting to measure the impact of the various libaries on compilation time, that was cited by Uber as being one of the leading reasons behind the development of `needle`.
 
-Future work could explore further optimizations to the zero-cost DI system, such as integrating with SwiftUI and other modern Swift features. Additionally, extending the benchmarking to other platforms and languages could provide a more comprehensive understanding of DI systems' performance impacts. Expanding the adoption of the zero-cost DI system within the iOS developer community could also yield valuable feedback and improvements.
-
-
-
-
-
-
+Future work could explore further optimizations to the zero-cost DI system, such as integrating with SwiftUI and other modern Swift features. Additionally, extending the benchmarking to other platforms and languages could provide a more comprehensive understanding of DI systems' performance impacts.
 
 
 

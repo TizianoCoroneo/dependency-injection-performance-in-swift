@@ -18,20 +18,26 @@ public struct SwiftDependenciesTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Dependencies
+        import func Benchmark.blackHole
 
         \(classes.reversed().map(\.swiftDependenciesRegistration).joined(separator: "\n"))
 
-        public struct GeneratedBySwiftDependencies: GeneratedProject {
-            public typealias Container = [Any]
+        public class GeneratedBySwiftDependencies: GeneratedProject {
             public init() {}
 
-            public func makeContainer() -> Container { [
-        \(indent(1, classes.reversed().map(\.swiftDependenciesBuild).joined(separator: ",\n")))
-            ] }
+            public class Container {
+        \(indent(2, classes.reversed().map(\.swiftDependencyProperty).joined(separator: "\n")))
+            }
+
+            public func makeContainer() -> Container {
+                return Container()
+            }
 
             public func accessAllInContainer(_ container: Container) {
                 blackHole(container)
-        \(indent(1, classes.reversed().map(\.swiftDependenciesAccess).joined(separator: "\n")))
+                withDependencies(from: self) {
+        \(indent(3, classes.reversed().map(\.swiftDependenciesAccess).joined(separator: "\n")))
+                }
             }
         }
         """
@@ -75,6 +81,12 @@ fileprivate extension ClassTemplate {
     var swiftDependenciesAccess: String {
         """
         blackHole(Dependency(\\.\(propertyName)).wrappedValue)
+        """
+    }
+
+    var swiftDependencyProperty: String {
+        """
+        @Dependency(\\.\(propertyName)) var \(propertyName): \(typeName)
         """
     }
 }

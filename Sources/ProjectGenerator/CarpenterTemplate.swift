@@ -18,6 +18,7 @@ public struct CarpenterTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Carpenter
+        import func Benchmark.blackHole
 
         public final class CarpenterContainer: DependencyContainer {
             public static var shared: CarpenterContainer = .init()

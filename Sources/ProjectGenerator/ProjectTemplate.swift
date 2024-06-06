@@ -16,6 +16,7 @@ public protocol ProjectTemplate {
 public extension ProjectTemplate {
     var boilerplate: String {
         """
+        import func Benchmark.blackHole
 
         public enum SeeTheActualCode {}
         

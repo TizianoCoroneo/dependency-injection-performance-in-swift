@@ -29,6 +29,7 @@ public struct ProfilerTarget: ParsableCommand {
         case carpenter
     }
 
+    @MainActor
     public func run() throws {
         for i in 0..<100 {
             logger.trace("\(i): Starting to make container")

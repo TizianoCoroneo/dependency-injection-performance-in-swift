@@ -20,19 +20,14 @@ final class ProjectGeneratorTests: XCTestCase {
         var rng: any RandomNumberGenerator = SystemRandomNumberGenerator()
         try await saveGraphImage(rng: &rng)
     }
-    
-    func testGenerateImage_OpenSourceModel() async throws {
-        var rng: any RandomNumberGenerator = SystemRandomNumberGenerator()
-        for _ in 0..<100 { try await saveGraphImage(rng: &rng) }
-    }
 
     private func saveGraphImage(
         rng: inout RandomNumberGenerator
     ) async throws {
         let graph = UnweightedGraph.randomDAG(
             spec: GraphSpec(
-                width: 1...10,
-                height: 5...15,
+                width: 10...15,
+                height: 10...15,
                 density: 0.8),
             using: &rng)
 

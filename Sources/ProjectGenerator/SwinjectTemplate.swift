@@ -18,6 +18,7 @@ public struct SwinjectTemplate: ProjectTemplate {
     public func contents(using rng: inout any RandomNumberGenerator) -> String {
         """
         import Swinject
+        import func Benchmark.blackHole
 
         public struct GeneratedBySwinject: GeneratedProject {
             public init() {}
