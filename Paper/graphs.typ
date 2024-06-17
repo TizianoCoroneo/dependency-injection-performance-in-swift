@@ -36,7 +36,7 @@ digraph G {
       label = "Runtime dependencies";
       color=lightblue;
       
-      Carpenter[color=lightgreen, style=filled]
+      Carpenter
       Swinject
       Factory
       Cleanse

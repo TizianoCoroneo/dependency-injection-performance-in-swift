@@ -1,5 +1,5 @@
 
-#let paperTitle = "A zero-cost dependency injection system?"
+#let paperTitle = "All dependency injection systems are zero-cost"
 
 #set document(
   title: [ paperTitle ],
@@ -10,6 +10,8 @@
 #set bibliography(
   style: "institute-of-electrical-and-electronics-engineers")
 
+#set cite(style: "ieee.csl")
+
 #set quote(block: true, quotes: true)
 
 #import "cover.typ": cover
@@ -19,91 +21,112 @@
 
 = Introduction
 
-Consider the following piece of Swift 5.10 code:
+Modern mobile apps grow larger and larger over time, adding new features and extending existing capabilities. Some large-scale apps like Uber can have \~300 modules, amounting to \~1,000,000 lines of code @uber-poet-blog.
+As they grow, their internal structures also grow so complex that their authors spend a substantial amount of engineering in making systems to manage said complexity, be they abstract sets of principles like SOLID @martin2003agile or support systems for everyday operations.
 
+Consider the following piece of Swift 5.10 code in @api-client-1:
+
+#figure(
 ```Swift
 class APIClient {
- init() {}
- func request(url: String) async throws -> String { /*[...]*/ }
+  init() {}
+  func request(url: String) async throws -> String { /*[...]*/ }
 }
 
 class CheckoutService {
- let apiClient = APIClient()
- init() {}
- func performCheckout() async throws {
- let response = try await apiClient.request(url: "https://example.com/checkout")
- print("Data fetched successfully! Response: \(response)")
- }
+  let apiClient = APIClient()
+  init() {}
+  func performCheckout() async throws {
+    let response = try await apiClient.request(url: "https://example.com/checkout")
+    print("Data fetched successfully! Response: \(response)")
+  }
 }
-```
+```, caption: "Two classes, CheckoutService and APIClient, with a direct dependency of the former on the latter.") <api-client-1>
 
 Instances of the class `CheckoutService` need to use the services offered by `APIClient`. In this implementation, during the initialization of `CheckoutService` we create an instance of `APIClient` out of the blue and use its `request(url:)` method to perform the checkout by contacting an unspecified backend API.
 
 If we need an instance of `CheckoutService` to perform the checkout operation, we can instantiate the class and checkout away. However, what if we have multiple classes that require a reference to the same `APIClient`? What if we need multiple instances of the `CheckoutService`, each with a slightly differently configured `APIClient`? What if we want to unit-test the `CheckoutService` class?
 In all these cases, you want to _inject_ the specific `APIClient` instance that the `CheckoutService` _depends on_.
 
-For example, we may pass the specific instance of the `APIClient` to use in the initializer of the `CheckoutService` class, a method called "Constructor Injection" by Martin Fowler @fowler2004inversion:
+For example, we may pass the specific instance of the `APIClient` to use in the initializer of the `CheckoutService` class, a method called "Constructor injection" by Martin Fowler @fowler2004inversion (@constructor-injection).
 
+#figure(
 ```Swift
 class CheckoutService {
- let apiClient: APIClient
- init(apiClient: APIClient) {
- self.apiClient = apiClient
- }
- func performCheckout() async throws {
- let response = try await apiClient.request(url: "https://example.com/checkout")
- print("Data fetched successfully! Response: \(response)")
- }
+  let apiClient: APIClient
+  init(apiClient: APIClient) {
+    self.apiClient = apiClient
+  }
+  func performCheckout() async throws {
+    let response = try await apiClient.request(url: "https://example.com/checkout")
+    print("Data fetched successfully! Response: \(response)")
+  }
 }
 
 let checkout = CheckoutService(apiClient: APIClient())
-```
+```, caption: "Example of constructor injection."
+) <constructor-injection>
 
-Another option is to assign the instance to a property on the `CheckoutService` after initialization is complete, called "Setter Injection": 
+Another option is to assign the instance to a property on the `CheckoutService` after initialization is complete, called "Setter injection" (@setter-injection), or even to pass the instance directly to the method that requires it (@pass-argument). Note that the `APIClient` is now required to be optional, because of Swift's \"definite initialization\" rules: we cannot leave a field uninitialized by the end of the initializer. The compiler forces us to mark it as `Optional` to allow the value to be null in between the initialization and its assignment.
 
+#figure(
 ```Swift
 class CheckoutService {
- var apiClient: APIClient?
- init() {}
- func performCheckout() async throws {
- let response = try await apiClient?.request(url: "https://example.com/checkout")
- print("Data fetched successfully! Response: \(response ?? "")")
- }
+  var apiClient: APIClient?
+  init() {}
+  func performCheckout() async throws {
+    let response = try await apiClient?.request(url: "https://example.com/checkout")
+    print("Data fetched successfully! Response: \(response ?? "")")
+  }
 }
 
 let checkout = CheckoutService()
 checkout.apiClient = APIClient()
-```
+```, caption: "Example of setter injection.") <setter-injection>
 
-Or even pass the instance directly to the method that requires it:
-```Swift
+#figure(```Swift
 class CheckoutService {
- init() {}
- func performCheckout(apiClient: APIClient) async throws {
- let response = try await apiClient.request(url: "https://example.com/checkout")
- print("Data fetched successfully! Response: \(response)")
- }
+  init() {}
+  func performCheckout(apiClient: APIClient) async throws {
+    let response = try await apiClient.request(url: "https://example.com/checkout")
+    print("Data fetched successfully! Response: \(response)")
+  }
 }
 
 let checkout = CheckoutService()
 checkout.performCheckout(apiClient: APIClient())
-```
+```, caption: "Example of passing the dependency as an argument.") <pass-argument>
 
 These seem straightforward solutions to a simple problem: how can we decouple an object from its dependencies? As we will see, this apparent simplicity hides a world of complexity that no ambitious library author can ignore.
 
-Modern mobile apps grow larger and larger over time, adding new features and extending existing capabilities. Some large-scale apps like Uber can have \~300 modules, amounting to \~1,000,000 lines of code @uber-poet-blog.
-As they grow, their internal structures also grow so complex that their authors spend a substantial amount of engineering in making systems to manage said complexity, be they abstract sets of principles like SOLID @martin2003agile or support systems for everyday operations.
+Let's consider another case: we have an `Authenticator` object that handles the secure storage of auth tokens, and we have an `APIClient` that performs authenticated requests to a server. The `Authenticator` needs a working `APIClient` to perform the requests, but needs to be tested in isolation from them. The `APIClient` needs the `Authenticator` to perform authenticated requests, and to refresh the tokens according to the OAuth protocol. These objects' operations are clearly interdependent, but we cannot inject both of them in each other initializer (@figure-3).
 
-A category of these support systems is "Dependency Injection" (DI) @fowler2004inversion. 
+#figure(
+```swift
+let egg = Egg(chicken: ???)
+let chicken = Chicken(egg: ???)
+```, caption: "Cyclic dependency between eggs and chickens."
+) <figure-3>
 
-DI solves the problem of ~isolating code sections from their direct dependencies~ so that unit testing is as easy as possible while not overcomplicating the code base with additional functionality only meant to support testing.
+The solution is to use a different way to inject one of the dependencies into the other one. One option is to use setter injection for the `APIClient (depends on) Authenticator` edge, and keep constructor injection for the other direction (@authenticator).
+
+#figure(
+```Swift
+let apiClient = APIClient()
+let authenticator = Authenticator(apiClient: apiClient)
+apiClient.authenticator = authenticator
+```, caption: "Two classes, Authenticator and APIClient, with a cyclic dependency between them solved by using different types of injection.") <authenticator>
+
+The issue with using setter injection is the brief window between the initialization of the `Authenticator` and its assignment on `APIClient`. During this time the client cannot reliably perform its functionality because it's missing a critical dependency. 
+When details like these pile up across hundreds of modules and objects managed by different teams and organizations, it is very convenient to have support systems dedicated to solve these issues in a standardized, scalable way.
+
+The support systems for this specific kind of problems are called "Dependency Injection" (DI) systems @fowler2004inversion.
+
+DI solves the problem of ~isolating code sections from their direct dependencies~ to achieve a higher level of modularization and simplify unit testing while burdening the developer with the smallest amount of additional maintenance work.
 DI systems solve this issue by splitting building objects from using them and removing strong coupling between components @seemann2011dependency. They typically do so by defining an _object container_ that holds the dependencies needed by our program, provides easy access to the objects within, and allows overriding objects to test different scenarios.
 
 DI is a common feature of many ecosystems: in Android apps, `Dagger` @square-dagger @google-dagger is the most common library, while in `.NET` there is an integrated DI system in the `IServiceCollection` API. In iOS there is no standard, first-party solution, but many different libraries are available with different APIs, capabilities, and tradeoffs.
 The most popular library is `Swinject`, with \~6200 stars on GitHub, followed by Square's `Cleanse` with ~1800 stars, Uber's `needle`@uber-needle with ~1700 stars, `Factory`@long-factory with ~1600 stars, and the latest entry, `swift-dependencies`@pointfreeco-swift-dependencies with ~1400 stars. We will also measure the performance of a dependency injection I wrote a few years ago: `Carpenter`.
-
-Uber's implementation is quite interesting, as it offers unique tradeoffs: while most DI systems resolve their dependency graph representation at runtime, their application is so large that they found the need to write their high-performance, compile-time safe DI system, doing their best to keep the impact on compilation times low.
-Their choices in designing this library offer insights into the different costs associated with dependency injection: a runtime solution is simpler to implement than a compile-time build plugin, but it may offer less type safety and impact an application's startup time. A compile-time solution provides better safety guarantees ("if it compiles, it works!"), higher performance at runtime, but it risks slowing down the development cycle by increasing build times locally and in continuous integration.
 
 All these frameworks provide similar capabilities while offering different performance tradeoffs. The first sub-research question explores these differences (*SQ1*):
 
@@ -114,18 +137,18 @@ All these frameworks provide similar capabilities while offering different perfo
 We will benchmark these frameworks to evaluate their performance impact in different categories compared to regular Swift code that uses no external library to manage complexity. Presenting the results constitutes the answer to the second research sub-question (*SQ2*):
 
 #quote[
- What is the performance impact of dependency injection systems in iOS?
+ What is the performance impact of dependency injection systems?
 ]
 
-Then, we will benchmark the performance of the main open-source DI frameworks, discussing what it means to be a _zero-cost dependency injection system_, and providing an answer to the main research question (*MQ*):
+Then, we will analyze the results, discussing what it means to be a _zero-cost dependency injection system_, arguing why all the tested systems belong to this classification, and providing an answer to the main research question (*MQ*):
 
 #quote[
- Is a zero-cost dependency injection system possible?
+  Are all dependency injection system zero-cost?
 ]
 
 = Related work
 
-"Zero-cost abstractions" describes some abstractions in the C++ ecosystem that follow the "zero-overhead principle," first described by Bjarne Stroustrup @foundations-of-cpp.
+"Zero-cost abstractions" describes some abstractions in the C++ ecosystem that follow the "zero-overhead principle," first described by Bjarne Stroustrup @foundations-of-cpp. The idea is to strive to have abstractions that only bear costs at compile time, but can be optimized by the compiler to have a negligible runtime cost. 
 
 Some works in the literature refer to DI systems with the more generic name of "Inversion of Control containers," like the paper "Inversion-of-control layer" @ioc-layer by Sobernig and Zdun, which presents the pattern and one of its possible evolutions from a multi-modular architecture point of view.
 
@@ -133,9 +156,10 @@ While developing the `needle` library, Uber also made another library called `Po
 
 #pagebreak()
 
-= Methodology
+= All dependency injection systems are zero-cost
 
-We conducted a series of benchmarks and analyses to investigate the tradeoffs and performance impact of dependency injection (DI) systems in iOS. This section outlines the procedures and criteria used to evaluate the frameworks.
+We conducted a series of benchmarks and analyses to investigate the tradeoffs and performance impact of dependency injection (DI) systems in iOS. Ultimately, this resulted in the realization that the costs associated with DI systems are most often negligible. 
+This section outlines the procedures and criteria used to evaluate the frameworks, and come to this conclusion.
 
 We developed a codegen tool that generates projects using each library under test, creating a large object graph. We integrated this tool as a build-time plugin inside a benchmark suite that measures two different procedures:
 
@@ -149,7 +173,41 @@ We must simulate object accesses representing common usage patterns. Apps make A
 
 In evaluating dependency injection (DI) systems, it's important to differentiate between the costs associated with "creating the graph" and those tied to "accessing the graph." 
 
-Creating the graph is a foundational step that usually occurs once at the application launch. Since this process is a one-time overhead, performance concerns are relatively minor as long as the initialization completes within an acceptable threshold: in waiting for an application to launch on iOS, the user will accept a few tens of milliseconds before quickly returning to cat pictures. Even if graph creation is slightly slower, it might not significantly impact the overall user experience as long as it stays within bounds. On the other hand, accessing the graph is an operation that occurs repeatedly throughout the application's lifecycle. This frequent interaction with the DI system means that the performance of accessing the graph is critical and should be optimized. The quicker and more efficiently an application can access its DI graph, the better it will perform during regular use. Therefore, when assessing or designing a DI system, emphasis should be placed on optimizing how the system handles repeated accesses to the object graph, ensuring swift and efficient retrieval and interaction with the dependencies it manages.
+Creating the graph is a foundational step that usually occurs once at the application launch. Since this process is a one-time overhead, performance concerns are relatively minor as long as the initialization completes within an acceptable threshold: in waiting for an application to launch on iOS, the user will accept a few tens of milliseconds before quickly returning to cat pictures. Even if graph creation is slightly slower, it might not significantly impact the overall user experience as long as it stays within bounds. On the other hand, accessing the graph is an operation that occurs repeatedly throughout the application's lifecycle. This frequent interaction with the DI system means that the performance of accessing the graph is critical and should be optimized. The quicker and more efficiently an application can access its DI graph, the better it will perform during regular use. Therefore, when designing a DI system, emphasis should be placed on optimizing how the system handles repeated accesses to the object graph, ensuring swift and efficient interaction with the dependencies it manages.
+
+=== The tradeoffs
+
+There are many tradeoffs in the design of a dependency injection system: aiming for the best runtime performance usually results in worse compilation times, while optimizing for compile time usually requires more information to be made available to the compiler. This information needs to come from somewhere: either from runtime, incurring in runtime costs for the application, or from the developer, resulting in a worse developer experience, slower development, and a higher risk of mistakes.
+
+For example, Uber's implementation is quite different from the other DI systems that we examined: they tend to resolve their dependency graph representation at runtime, avoiding the need for an additional build step, but Uber's application is so large that they found the need to write their high-performance, compile-time safe DI system to provide additional safety guarantees while doing their best to keep the impact on compilation times low.
+
+Their choices in designing this library offer insights into the different costs associated with dependency injection: a runtime solution is simpler to implement than a compile-time build plugin, but it may offer less type safety and impact an application's startup time. A compile-time solution provides better safety guarantees ("if it compiles, it works!"), higher performance at runtime, but it risks slowing down the development cycle by increasing build times locally and in continuous integration.
+
+This analysis can be summed up in @tradeoffs-table, which gives an answer to the first sub-research question (*SQ1*).
+
+#figure(
+  table(
+    columns: (auto, auto, auto, auto, auto),
+    inset: 10pt,
+    align: horizon,
+    table.header(
+      [], [*Runtime performance*], [*Compilation time*], [*Developer experience*], [*Features*],
+    ),
+    [*Add build step to minimize runtime*],
+    "Application runs as fast as possible",
+    "Additional build step slows down compilation",
+    "Longer iteration and CI times",
+    "Information might be unavailable in static analysis",
+
+    [*Build graph fully at runtime*],
+    "Performance loss in launch times and throughout use",
+    "Only impact is the compilation of the framework itself",
+    "Smaller impact on iteration and CI times",
+    "More information available during runtime",
+    
+  ),
+  caption: "Tradeoffs involved with different choices in the design space of DI systems."
+) <tradeoffs-table>
 
 == Benchmarking Setup
 
@@ -203,9 +261,9 @@ caption: "This is how the simple template project stores the built objects graph
 
 #pagebreak()
 
-== Development process
+== How does it work
 
-The process began by creating a small project generator to take a generic graph and generate a class for each node and a property for each edge. For an edge _e_ from _A_ to _B_, the codegen would generate the following code:
+To test DI systems we need comparable projects that use different DI systems. We begin by creating a small project generator to take a generic dependency graph and generate a class for each node and a property for each edge. For an edge _e_ from node _A_ to node _B_, the codegen would generate the following code:
 
 #figure(```swift
 class A {
@@ -217,9 +275,12 @@ class B {
 }
 ```)
 
-The next step was to add more generators, one for each library, according to each library's documentation and best practices. Most libraries are very similar in their setup and operation, so that did not take long, with one glaring exception: Uber's `needle` library also contained a code generation step. Figuring out how to chain two build plugins that depend on each other in the Swift Package Manager has been an exciting debugging journey.
+These classes represent real objects and systems that you would tipically encounter in an app: database clients, API clients, deeplink handlers, global routers, app intents handling, analytics clients, all kinds of encapsulation objects around third party vendor's code and so on.
 
-Implementing the benchmarks on top of the generated project took little time, as all generated projects adhere to the same protocol, so we can use polymorphism to reuse the benchmark code regardless of which library is adopted internally. Specifically, the projects implement the following protocol:
+The next step is to add more generators, one for each library, according to each library's documentation and best practices. Most libraries are very similar in their setup and operation, so that is a relatively easy endeavor, with one glaring exception: Uber's `needle` library also contains a code generation step. Figuring out how to chain two build plugins that depend on each other in the Swift Package Manager is an exciting debugging journey that I won't spoil to the reader.
+
+After we have a reliable project generator, we can write benchmarks on top of it. This is greatly simplified if all project generators conform to a common interface, that will dictate what is and isn't possible within the benchmarks. 
+Specifically, the projects implement the following protocol:
 
 #figure(```Swift
 protocol GeneratedProject {
@@ -229,33 +290,33 @@ protocol GeneratedProject {
 }
 ```)
 
-To perform the benchmark, we used the facilities provided by the `SwiftBenchmark` library: running the following script from the root folder of the project is enough to download dependencies, compile everything, generate the template projects, run the benchmarks, and generate a report in JMH format for later analysis:
+To perform the benchmark, we use the facilities provided by the `SwiftBenchmark` library: running the following script from the root folder of the project is enough to download dependencies, compile everything, generate the template projects, run the benchmarks, and generate a report in JMH format for later analysis:
 #figure(```bash
 swift package --allow-writing-to-package-directory benchmark --format jmh
 ```)
-There is also a Makefile with a single rule to run this script.
+There is also a `Makefile` with a single rule to run this script.
 
-The report contains information for each benchmark: "Access all" and "Create container." I displayed the results using the JMH online visualizer.
+The report contains information for each benchmark: "Access all" and "Create container." The results are best displayed using the JMH online visualizer, that also produced the graphs included in this document.
 
 #pagebreak()
 
-We will measure each DI system's performance on a randomly generated hierarchical DAG, with characteristics determined by the "project.spec" file within each benchmark folder. This file contains the following data:
+We measure each DI system's performance on a randomly generated hierarchical DAG, with characteristics determined by the "project.spec" file within each benchmark folder. This file contains the following data:
 - Width: How wide should each layer of the graph be? (10-15)
 - Height: How many layers should the graph have? (10, 15)
 - Density: What is the probability that a node in a layer has an edge to a node in the next layer? (0.8)
 - Seed: The seed of the random number generator.
 
-We also implemented an integration with GraphViz to display an example of the magnificent graphs that will be the object of these tests:
+The project also contains an integration with GraphViz to display an example of the magnificent graphs that will be the object of these tests:
 
 #figure(
   image("monster-graph.jpeg"),
-  caption: "A somewhat realistic proxy for the typical enterprise application."
-)
+  caption: "A somewhat realistic proxy for the typical enterprise application.")
 
 #pagebreak()
 
-During the benchmarks' development, we analyzed the generated projects' behavior using Apple's Instruments profiling tool. We added a new target to the project (named, creatively, "Profiler target"), specifically for running the generated projects in the profiler with all optimizations.
-For each integration, we repeated the performance tests using Instruments.
+When implementing a new project generator within this benchmark setup it is good to analyze and profile the generated projects' behavior. For this, we used Apple’s own Instruments profiling tool. The project includes a target (named, creatively, “Profiler target”), specifically for running the generated projects in the profiler with all optimizations enabled. For each integration, we repeated the performance tests using Instruments.
+
+@moduleGraph is an overview of the module graph of this benchmarking and project generation suite.
 
 #figure(
   moduleGraph,
@@ -315,13 +376,28 @@ The slowest system in the "Creating the graph" category only takes 2.600µs, wit
 
 The access times are more interesting. The slowest library takes 2.742µs to access its build graph; this cost could contribute to app slowdowns if it needs to be paid multiple times during the application's lifetime.
 
+=== Do the results generalize to other platforms?
+iOS devices are comparable to relatively powerful embedded systems. Other ecosystems that run applications in the same class in regards to size and architecture tipically have their own preferred method or framework for dependency injection, like the previously cited Dagger for Android, or the standard APIs in .NET: these systems run on everything from relatively low power Android devices to the largest servers.
+
+As this benchmark focused on one of the lowest powered devices in this broad range, we can be confident that these results will be valid in other platforms with more computational capacity available, like laptops, servers, or distributed systems. Considering instead other embedded devices, we can certainly say that most software running on these has a completely different set of constraints, so much so that some features of regular Swift code are completely unavailable when compiling in the recently introduced embedded compilation mode @cit-needed. The need for complex dependency injection systems seems to be out of place if the most pressing issue is how to minimize binary size, or memory consumption.
+
 #pagebreak()
 
 = Conclusion
 
-This paper has explored the evaluation of dependency injection systems in iOS. Through benchmarking, we have shown that the hidden costs of injection systems are hidden not because of misleading documentation but because they are too small to show up on any profiler pointed at our typical iOS application. Trade-offs are unavoidable, as in the rest of the field of Computer Science. However, in this case, the differences are so minor that, as library designers, we can afford to focus on the developer experience without worrying about the runtime performance of our application in most cases. Our findings also provide a valuable tool for other iOS engineers to benchmark large-scale systems by adding new project templates to the generator.
+This paper has explored the evaluation of dependency injection systems in iOS. Through benchmarking, we have shown that the hidden costs of injection systems are hidden not because of misleading documentation but because they are too small to have any impact on usage on any typical iOS application. 
+Trade-offs are unavoidable, as in the rest of the field of Computer Science. However, in this case, the differences are so minor that, as library designers, we can afford to focus on the developer experience without worrying about the runtime performance of our application in most cases. Our findings also provide a valuable tool for other developers to benchmark DI systems by adding new project templates to the generator.
+
+#quote[
+  Are all dependency injection system zero-cost?
+]
+
+Yes, the runtime costs of DI systems are always insignificant under realistic assumptions. The benchmarking tool presented (*MQ*)
+
 
 == Future Work
+
+Testing graphs created from real-world traces would give greater insights on the performance costs in production applications.
 
 A different benchmarking setup is required to correctly measure the impact of frameworks such as `swift-dependencies` and `needle`. It would also be interesting to measure the impact of the various libraries on compilation time, which Uber cited as one of the leading reasons behind the development of `needle`.
 
