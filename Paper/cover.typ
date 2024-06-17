@@ -6,7 +6,7 @@ dailySupervisor: [Atze van der Ploeg],
 secondSupervisor: [TBD],
 studentName: [Tiziano Coroneo],
 studentId: $[2736905]$,
-isResearchProposal: true,
+isResearchProposal: false,
 ) = {
 
 context align(center)[
