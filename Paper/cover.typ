@@ -3,7 +3,7 @@
 paperTitle: [A zero-cost dependency injection system],
 firstSupervisor: [Atze van der Ploeg],
 dailySupervisor: [Atze van der Ploeg],
-secondSupervisor: [TBD],
+secondSupervisor: [Aloïs Rosset],
 studentName: [Tiziano Coroneo],
 studentId: $[2736905]$,
 isResearchProposal: false,

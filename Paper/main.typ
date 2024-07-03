@@ -167,7 +167,8 @@ Then, we will analyze the results, discussing what it means to be a _zero-cost d
 
 Some works in the literature refer to DI systems with the more generic name of "Inversion of Control containers," like the paper "Inversion-of-control layer" @ioc-layer by Sobernig and Zdun, which presents the pattern and one of its possible evolutions from a multi-modular architecture point of view.
 
-While developing the `needle` library, Uber also made another library called `Poet`@uber-poet-blog to generate iOS projects with different module configurations. They used this code generation mechanism to generate test projects and benchmark the library's capabilities in different environments.
+While developing the `needle` library, Uber also made another library called `Poet`@uber-poet-blog to generate iOS projects with different module configurations. They used this code generation mechanism to generate test projects and benchmark the library's capabilities in different environments. Since `Poet` is made in Python, we found it easier to build a new benchmarking framework fully in Swift instead.
+Android also offers a similar project generator setup in `Android Studio Poet`@android-poet.
 
 #pagebreak()
 
@@ -329,12 +330,9 @@ The project also contains an integration with GraphViz to display an example of 
 
 When implementing a new project generator within this benchmark setup it is good to analyze and profile the generated projects' behavior. For this, we used Apple’s own Instruments profiling tool. The project includes a target (named, creatively, “Profiler target”), specifically for running the generated projects in the profiler with all optimizations enabled. For each integration, we repeated the performance tests using Instruments.
 
-@moduleGraph is an overview of the module graph of this benchmarking and project generation suite.
+=== Where to find the code
 
-#figure(
-  moduleGraph,
-  caption: "This is module graph of the project. The benchmarks run the project generation tool at compile time as a build plugin to create the test projects and import the various DI frameworks runtimes. The green elements represent the contributions in this paper."
- ) <moduleGraph>
+Both the benchmark suite and project generator are available on Github@github-repo as a public repo.
 
 #pagebreak()
 
